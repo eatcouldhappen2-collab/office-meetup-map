@@ -23,6 +23,7 @@
   td.min{font-weight:700;color:#0b7a43}
   .rank{display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;border-radius:50%;color:#fff;font-size:11px;font-weight:700;margin-right:6px}
   .name{font-weight:600}
+  tr.base td{font-size:11px;color:#7a8492;padding:3px 4px;background:#f6f7f9}
   .tag{margin-left:5px;font-size:10px;padding:0 4px;border:1px solid #adb5bd;border-radius:3px;color:#5b6572;font-weight:400}
   label{display:inline-flex;align-items:center;gap:4px;cursor:pointer}
   .legend{margin:14px 0 0;font-size:12px;color:#44505e;line-height:1.7}
@@ -46,7 +47,7 @@
 <div class="app">
   <aside>
     <h1>스파크플러스 후보 17곳 비교</h1>
-    <p class="sub">왕복 이동시간(분). 서대문 출발 3명 + 신림 1명 기준이고, 6시에 끝나면 4명 모두 각자 집으로 갑니다(홍대 약속은 고려하지 않음). 합계가 짧은 순서입니다. 네모 핀은 서울강남 탭 지점입니다. 행을 누르면 그 지점의 경로와 시간이 지도에 표시됩니다.</p>
+    <p class="sub">평소 서대문 출퇴근 동선 대비 <b>늘어나는 이동시간(분)</b>이 적은 순서입니다. 서대문 출발 3명은 "서대문→지점→집"에서 "서대문→집"을 뺀 값이고, 신림은 "신림↔지점 왕복"에서 "신림↔서대문 왕복"을 뺀 값입니다. 마이너스는 평소보다 짧아진다는 뜻입니다. 네모 핀은 서울강남 탭 지점입니다. 행을 누르면 경로와 구간 시간이 지도에 표시됩니다.</p>
     <div class="btns">
       <button id="top5">상위 5곳</button>
       <button id="gn">강남 탭 지점</button>
@@ -55,11 +56,12 @@
     <table>
       <thead>
         <tr><th>순위·지점</th><th>잠실</th><th>군자</th><th>상봉</th><th>신림</th><th>합계</th><th>최대</th></tr>
+        <tr class="base"><td>평소 서대문 기준</td><td>38</td><td>28</td><td>37</td><td>74</td><td></td><td></td></tr>
       </thead>
       <tbody id="rows"></tbody>
     </table>
     <div class="legend" id="legend"></div>
-    <div class="note">초록 굵은 숫자는 그 열에서 가장 짧은 값입니다. 제휴 라운지는 포함하지 않았습니다. 선은 직선 표시이며 실제 지하철 경로가 아닙니다. 시간은 노선과 정거장 수로 어림잡은 값이라 ±5분 정도 오차가 있습니다.</div>
+    <div class="note">초록 굵은 숫자는 그 열에서 가장 작은 값입니다. "평소" 행은 서대문→집 시간(신림은 왕복)이며 모든 지점 비교의 기준입니다. 지도의 선은 이동시간 기준 비교를 보여 주는 직선입니다. 제휴 라운지는 포함하지 않았습니다. 선은 직선 표시이며 실제 지하철 경로가 아닙니다. 시간은 노선과 정거장 수로 어림잡은 값이라 ±5분 정도 오차가 있습니다.</div>
   </aside>
   <div id="map"></div>
 </div>
@@ -93,8 +95,13 @@ const C = [
   {n:'선릉3호점',     pos:[37.5045,127.0490], s:45, j:9,  g:27, b:37, l:23, gn:1},
   {n:'방배점(내방)',  pos:[37.4876,126.9933], s:38, j:40, g:24, b:38, l:22, gn:1}
 ];
+// 평소 서대문 출퇴근: 잠실·군자·상봉은 서대문→집 편도, 신림은 서대문↔집 왕복
+const BASE={jamsil:38,gunja:28,sangbong:37,sillim:74};
+const fmt=v=>v>0?'+'+v:v<0?'−'+Math.abs(v):'0';
 C.forEach(c=>{
-  c.t={jamsil:c.s+c.j, gunja:c.s+c.g, sangbong:c.s+c.b, sillim:2*c.l};
+  const t={jamsil:c.s+c.j, gunja:c.s+c.g, sangbong:c.s+c.b, sillim:2*c.l};
+  c.raw=t.jamsil+t.gunja+t.sangbong+t.sillim;
+  c.t={jamsil:t.jamsil-BASE.jamsil, gunja:t.gunja-BASE.gunja, sangbong:t.sangbong-BASE.sangbong, sillim:t.sillim-BASE.sillim};
   c.sum=c.t.jamsil+c.t.gunja+c.t.sangbong+c.t.sillim;
   c.max=Math.max(c.t.jamsil,c.t.gunja,c.t.sangbong,c.t.sillim);
 });
@@ -124,7 +131,7 @@ dot(SRC.sillim.pos,'#888',SRC.sillim.n);
 // 후보 번호 핀
 const pins = C.map(c=>{
   const m = L.marker(c.pos,{zIndexOffset:1000-c.rank, icon:iconFor(c,false)}).addTo(map);
-  m.bindTooltip(c.rank+'위 '+c.n+' · 합계 '+c.sum+'분',{direction:'top',offset:[0,-14]});
+  m.bindTooltip(c.rank+'위 '+c.n+' · 평소 대비 '+fmt(c.sum)+'분',{direction:'top',offset:[0,-14]});
   m.on('click',()=>{c.on=true;focus=c.rank-1;render();});
   return m;
 });
@@ -151,7 +158,7 @@ function render(){
   C.forEach((c,i)=>{
     const tr=document.createElement('tr');
     tr.className='cand'+(i===focus?' focus':'');
-    const cell=(k,v)=>'<td class="'+(v===best(k)?'min':'')+'">'+v+'</td>';
+    const cell=(k,v)=>'<td class="'+(v===best(k)?'min':'')+'">'+fmt(v)+'</td>';
     tr.innerHTML=
       '<td><label><input type="checkbox" '+(c.on?'checked':'')+' data-i="'+i+'"><span class="rank" style="background:'+c.color+'">'+c.rank+'</span><span class="name">'+c.n+'</span>'+(c.gn?'<span class="tag">강남</span>':'')+'</label></td>'+
       cell('jamsil',c.t.jamsil)+cell('gunja',c.t.gunja)+cell('sangbong',c.t.sangbong)+cell('sillim',c.t.sillim)+cell('sum',c.sum)+cell('max',c.max);
@@ -181,7 +188,7 @@ function render(){
     '<b>'+fc.rank+'위 '+fc.n+' 구간별 시간</b><br>'+
     '서대문 → '+fc.n+' '+fc.s+'분 (도착용)<br>'+
     fc.n+' → 잠실 '+(fc.j>0?fc.j+'분':'0분 (이미 도착)')+' · 군자 '+fc.g+'분 · 상봉 '+fc.b+'분 · 신림 '+fc.l+'분<br>'+
-    '신림은 출근과 귀가 모두 '+fc.l+'분이라 왕복 '+(2*fc.l)+'분입니다.';
+    '신림은 왕복 '+(2*fc.l)+'분이라 평소(74분) 대비 '+fmt(2*fc.l-74)+'분입니다.<br>4명 합계 이동시간 '+fc.raw+'분 = 평소 대비 '+fmt(fc.sum)+'분, 가장 많이 늘어나는 사람 '+fmt(fc.max)+'분.';
 }
 document.getElementById('top5').onclick=()=>{C.forEach((c,i)=>c.on=i<5);focus=0;render();};
 document.getElementById('gn').onclick=()=>{C.forEach(c=>c.on=!!c.gn);focus=C.findIndex(c=>c.gn);render();};
