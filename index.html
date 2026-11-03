@@ -1,0 +1,176 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>공유오피스 후보 비교</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+<style>
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%;font-family:system-ui,"Malgun Gothic",sans-serif;color:#1d2530;background:#f3f4f6}
+  .app{display:flex;height:100%}
+  aside{width:400px;flex:none;overflow:auto;padding:14px 16px;background:#fff;border-right:1px solid #d9dde3}
+  #map{flex:1;min-width:0;background:#e8eef2}
+  h1{font-size:16px;margin:0 0 4px}
+  .sub{font-size:12px;color:#5b6572;margin:0 0 12px;line-height:1.5}
+  table{border-collapse:collapse;width:100%;font-size:12px;font-variant-numeric:tabular-nums}
+  th{font-weight:600;color:#5b6572;text-align:right;padding:4px 4px;border-bottom:1px solid #d9dde3}
+  td{padding:7px 4px;text-align:right;border-bottom:1px solid #eceef1}
+  th:first-child,td:first-child{text-align:left}
+  tr.cand{cursor:pointer}
+  tr.cand:hover{background:#f6f7f9}
+  tr.focus{background:#fff4e6}
+  td.min{font-weight:700;color:#0b7a43}
+  .rank{display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;border-radius:50%;color:#fff;font-size:11px;font-weight:700;margin-right:6px}
+  .name{font-weight:600}
+  label{display:inline-flex;align-items:center;gap:4px;cursor:pointer}
+  .legend{margin:14px 0 0;font-size:12px;color:#44505e;line-height:1.7}
+  .legend i{display:inline-block;width:22px;height:0;border-top:3px solid;vertical-align:middle;margin-right:6px}
+  .note{margin-top:12px;font-size:11px;color:#7a8492;line-height:1.5}
+  .btns{display:flex;gap:6px;margin:0 0 10px}
+  .btns button{font:inherit;font-size:12px;padding:4px 10px;border:1px solid #c5cad2;background:#fff;border-radius:5px;cursor:pointer}
+  .btns button:hover{background:#f3f4f6}
+  .lbl{background:#fff;border:1px solid #888;border-radius:4px;padding:1px 5px;font-size:11px;white-space:nowrap;box-shadow:none}
+  .pin{width:26px;height:26px;border-radius:50%;border:2px solid #fff;color:#fff;font-weight:700;font-size:13px;display:flex;align-items:center;justify-content:center;box-shadow:0 1px 4px #0006}
+  .pin.on{width:32px;height:32px;font-size:15px;border-width:3px}
+  @media (max-width:760px){
+    .app{flex-direction:column-reverse}
+    aside{width:auto;height:46%;border-right:0;border-top:1px solid #d9dde3}
+    #map{flex:1}
+  }
+</style>
+</head>
+<body>
+<div class="app">
+  <aside>
+    <h1>스파크플러스 후보 5곳 비교</h1>
+    <p class="sub">왕복 이동시간(분). 서대문 출발 3명 + 신림 1명 기준이고, 6시에 끝나면 4명 모두 각자 집으로 갑니다(홍대 약속은 고려하지 않음). 행을 누르면 그 지점의 경로와 시간이 지도에 표시됩니다.</p>
+    <div class="btns">
+      <button id="all">5곳 모두 표시</button>
+      <button id="none">선 모두 끄기</button>
+    </div>
+    <table>
+      <thead>
+        <tr><th>순위·지점</th><th>잠실</th><th>군자</th><th>상봉</th><th>신림</th><th>합계</th><th>최대</th></tr>
+      </thead>
+      <tbody id="rows"></tbody>
+    </table>
+    <div class="legend" id="legend"></div>
+    <div class="note">초록 굵은 숫자는 그 열에서 가장 짧은 값입니다. 선은 직선 표시이며 실제 지하철 경로가 아닙니다. 시간은 노선과 정거장 수로 어림잡은 값이라 ±5분 정도 오차가 있습니다.</div>
+  </aside>
+  <div id="map"></div>
+</div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script>
+const SRC = {
+  seodaemun:{n:'서대문 (3명 출발)', pos:[37.5656,126.9667]},
+  jamsil:   {n:'잠실 (집)',        pos:[37.5133,127.1001]},
+  gunja:    {n:'군자 (집)',        pos:[37.5571,127.0794]},
+  sangbong:{n:'상봉 (집)',        pos:[37.5966,127.0855]},
+  sillim:   {n:'신림 (하루 종일)', pos:[37.4842,126.9293]}
+};
+// s: 서대문→지점, j/g/b: 지점→잠실/군자/상봉, l: 신림↔지점 편도
+const C = [
+  {n:'동대문(DDP)',   pos:[37.5651,127.0079], color:'#2f9e44', s:9,  j:25, g:16, b:27, l:42},
+  {n:'광화문',        pos:[37.5712,126.9769], color:'#1c7ed6', s:2,  j:37, g:25, b:35, l:40},
+  {n:'공덕역',        pos:[37.5440,126.9516], color:'#e8590c', s:7,  j:46, g:33, b:32, l:28},
+  {n:'시청',          pos:[37.5657,126.9769], color:'#c2255c', s:12, j:32, g:31, b:33, l:33},
+  {n:'왕십리',        pos:[37.5612,127.0371], color:'#0c8599', s:20, j:18, g:9,  b:13, l:50}
+];
+C.forEach((c,i)=>{
+  c.rank=i+1;
+  c.t={jamsil:c.s+c.j, gunja:c.s+c.g, sangbong:c.s+c.b, sillim:2*c.l};
+  c.sum=c.t.jamsil+c.t.gunja+c.t.sangbong+c.t.sillim;
+  c.max=Math.max(c.t.jamsil,c.t.gunja,c.t.sangbong,c.t.sillim);
+  c.on = (i===0);
+});
+let focus = 0;
+
+const map = L.map('map').setView([37.545,127.0],11);
+L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:18,attribution:'&copy; OpenStreetMap contributors'}).addTo(map);
+
+// 고정 지점(서대문, 집)
+function dot(pos,color,label,dir,off){
+  L.circleMarker(pos,{radius:7,color:'#222',weight:1.5,fillColor:color,fillOpacity:.95}).addTo(map)
+   .bindTooltip(label,{permanent:true,direction:dir||'right',offset:off||[8,0],className:'lbl'});
+}
+dot(SRC.seodaemun.pos,'#444',SRC.seodaemun.n,'top',[0,-8]);
+dot(SRC.jamsil.pos,'#888',SRC.jamsil.n);
+dot(SRC.gunja.pos,'#888',SRC.gunja.n);
+dot(SRC.sangbong.pos,'#888',SRC.sangbong.n);
+dot(SRC.sillim.pos,'#888',SRC.sillim.n);
+
+// 후보 번호 핀
+const pins = C.map(c=>{
+  const m = L.marker(c.pos,{zIndexOffset:1000-c.rank, icon:iconFor(c,false)}).addTo(map);
+  m.bindTooltip(c.rank+'위 '+c.n+' · 합계 '+c.sum+'분',{direction:'top',offset:[0,-14]});
+  m.on('click',()=>{c.on=true;focus=c.rank-1;render();});
+  return m;
+});
+function iconFor(c,on){
+  return L.divIcon({className:'',iconSize:null,iconAnchor:on?[16,16]:[13,13],
+    html:'<div class="pin'+(on?' on':'')+'" style="background:'+c.color+'">'+c.rank+'</div>'});
+}
+
+const lines = L.layerGroup().addTo(map);
+function seg(a,b,color,text,dash,focused){
+  L.polyline([a,b],{color,weight:focused?4:2.5,opacity:focused?.9:.55,dashArray:dash}).addTo(lines);
+  if(focused){
+    const mid=[(a[0]+b[0])/2,(a[1]+b[1])/2];
+    L.marker(mid,{opacity:0,interactive:false}).addTo(lines)
+     .bindTooltip(text,{permanent:true,direction:'center',className:'lbl'});
+  }
+}
+
+function render(){
+  // 표
+  const best = k => Math.min(...C.map(c=>k==='sum'||k==='max'?c[k]:c.t[k]));
+  const rows = document.getElementById('rows');
+  rows.innerHTML='';
+  C.forEach((c,i)=>{
+    const tr=document.createElement('tr');
+    tr.className='cand'+(i===focus?' focus':'');
+    const cell=(k,v)=>'<td class="'+(v===best(k)?'min':'')+'">'+v+'</td>';
+    tr.innerHTML=
+      '<td><label><input type="checkbox" '+(c.on?'checked':'')+' data-i="'+i+'"><span class="rank" style="background:'+c.color+'">'+c.rank+'</span><span class="name">'+c.n+'</span></label></td>'+
+      cell('jamsil',c.t.jamsil)+cell('gunja',c.t.gunja)+cell('sangbong',c.t.sangbong)+cell('sillim',c.t.sillim)+cell('sum',c.sum)+cell('max',c.max);
+    tr.addEventListener('click',e=>{
+      if(e.target.tagName==='INPUT'){c.on=e.target.checked; if(c.on)focus=i;}
+      else{c.on=true;focus=i;}
+      render();
+    });
+    rows.appendChild(tr);
+  });
+  // 핀 강조
+  C.forEach((c,i)=>pins[i].setIcon(iconFor(c,c.on&&i===focus)));
+  // 선
+  lines.clearLayers();
+  C.forEach((c,i)=>{
+    if(!c.on) return;
+    const f=(i===focus);
+    seg(SRC.seodaemun.pos,c.pos,c.color,'서대문→'+c.n+' '+c.s+'분',null,f);
+    seg(c.pos,SRC.jamsil.pos,c.color,'잠실 '+c.j+'분',null,f);
+    seg(c.pos,SRC.gunja.pos,c.color,'군자 '+c.g+'분',null,f);
+    seg(c.pos,SRC.sillim.pos,c.color,'신림 '+c.l+'분(편도)',null,f);
+    seg(c.pos,SRC.sangbong.pos,c.color,'상봉 '+c.b+'분',null,f);
+  });
+  // 범례
+  const fc=C[focus];
+  document.getElementById('legend').innerHTML=
+    '<b>'+fc.rank+'위 '+fc.n+' 구간별 시간</b><br>'+
+    '서대문 → '+fc.n+' '+fc.s+'분 (도착용)<br>'+
+    fc.n+' → 잠실 '+fc.j+'분 · 군자 '+fc.g+'분 · 상봉 '+fc.b+'분 · 신림 '+fc.l+'분<br>'+
+    '신림은 출근과 귀가 모두 '+fc.l+'분이라 왕복 '+(2*fc.l)+'분입니다.';
+}
+document.getElementById('all').onclick=()=>{C.forEach(c=>c.on=true);render();};
+document.getElementById('none').onclick=()=>{C.forEach(c=>c.on=false);render();};
+
+const allPts=[...Object.values(SRC).map(s=>s.pos),...C.map(c=>c.pos)];
+const fit=()=>{map.invalidateSize();map.fitBounds(L.latLngBounds(allPts).pad(0.08),{paddingTopLeft:[110,10],paddingBottomRight:[70,10]});};
+render();
+fit();
+window.addEventListener('load',fit);
+window.addEventListener('resize',fit);
+</script>
+</body>
+</html>
