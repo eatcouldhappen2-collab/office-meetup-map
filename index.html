@@ -27,11 +27,17 @@
   .tag{margin-left:5px;font-size:10px;padding:0 4px;border:1px solid #adb5bd;border-radius:3px;color:#5b6572;font-weight:400}
   label{display:inline-flex;align-items:center;gap:4px;cursor:pointer}
   .legend{margin:14px 0 0;font-size:12px;color:#44505e;line-height:1.7}
-  .legend i{display:inline-block;width:22px;height:0;border-top:3px solid;vertical-align:middle;margin-right:6px}
+  .legend .leg{display:block;margin:2px 0}
+  .legend i{display:inline-block;min-width:8px;height:10px;border-radius:2px;vertical-align:baseline;margin-right:2px}
+  .legend .lt{display:inline-block;padding:0 5px;border-radius:3px;color:#fff;font-size:11px;font-weight:600;margin-right:3px}
   .note{margin-top:12px;font-size:11px;color:#7a8492;line-height:1.5}
-  .btns{display:flex;gap:6px;margin:0 0 10px}
+  .btns{display:flex;gap:6px;margin:0 0 10px;flex-wrap:wrap}
   .btns button{font:inherit;font-size:12px;padding:4px 10px;border:1px solid #c5cad2;background:#fff;border-radius:5px;cursor:pointer}
   .btns button:hover{background:#f3f4f6}
+  .seg{display:flex;margin:0 0 10px;border:1px solid #c5cad2;border-radius:6px;overflow:hidden}
+  .seg button{flex:1;font:inherit;font-size:12px;padding:6px 8px;border:0;background:#fff;cursor:pointer;color:#44505e}
+  .seg button+button{border-left:1px solid #c5cad2}
+  .seg button.on{background:#1d2530;color:#fff;font-weight:600}
   .lbl{background:#fff;border:1px solid #888;border-radius:4px;padding:1px 5px;font-size:11px;white-space:nowrap;box-shadow:none}
   .pin{width:26px;height:26px;border-radius:50%;border:2px solid #fff;color:#fff;font-weight:700;font-size:13px;display:flex;align-items:center;justify-content:center;box-shadow:0 1px 4px #0006}
   .pin.sq{border-radius:6px}
@@ -47,7 +53,11 @@
 <div class="app">
   <aside>
     <h1>스파크플러스 후보 17곳 비교</h1>
-    <p class="sub">평소 서대문 출퇴근 동선 대비 <b>늘어나는 이동시간(분)</b>이 적은 순서입니다. 시간은 카카오맵 대중교통 길찾기에서 <b>각 지점 주소를 도착지로</b> 조회해 지하철 경로만 골라 읽은 값(도보 포함)입니다. 서대문 출발 3명은 "서대문→지점→집"에서 "서대문→집"을 뺀 값이고, 신림은 "신림→지점→신림"에서 "신림→서대문→신림"을 뺀 값입니다. 마이너스는 평소보다 짧아진다는 뜻입니다. 네모 핀은 서울강남 탭 지점입니다.</p>
+    <div class="seg" id="mode">
+      <button data-m="office" class="on">서대문에서 오후 출발</button>
+      <button data-m="direct">집에서 바로 출근·퇴근</button>
+    </div>
+    <p class="sub" id="sub"></p>
     <div class="btns">
       <button id="top5">상위 5곳</button>
       <button id="gn">강남 탭 지점</button>
@@ -56,148 +66,214 @@
     <table>
       <thead>
         <tr><th>순위·지점</th><th>잠실</th><th>군자</th><th>상봉</th><th>신림</th><th>합계</th><th>최대</th></tr>
-        <tr class="base"><td>평소 서대문 기준</td><td>36</td><td>28</td><td>39</td><td>77</td><td></td><td></td></tr>
+        <tr class="base" id="baserow"></tr>
       </thead>
       <tbody id="rows"></tbody>
     </table>
     <div class="legend" id="legend"></div>
-    <div class="note">초록 굵은 숫자는 그 열에서 가장 작은 값입니다. "평소" 행은 서대문→집 시간(신림은 왕복)이며 모든 지점 비교의 기준입니다. 이동시간은 카카오맵 길찾기를 조회한 값이라 조회 시각의 배차에 따라 몇 분 달라질 수 있습니다. 지도의 핀은 역 위치 기준이고 선은 실제 경로가 아닌 직선입니다. 제휴 라운지는 포함하지 않았습니다.<br><br>* 서울로점(서울역): 서대문에서 지하철만으로 가는 경로가 없어 지하철+버스 환승 경로 25분을 썼습니다.<br>* 잠실점: 잠실역까지 도보 6분은 길찾기 값이 아닌 추정입니다.</div>
+    <div class="note">초록 굵은 숫자는 그 열에서 가장 작은 값입니다. 이동시간은 카카오맵 길찾기를 조회한 값이라 조회 시각의 배차에 따라 몇 분 달라질 수 있습니다. 지도의 색 선은 카카오맵이 안내한 지하철 노선·환승역을 따라 실제 선로(OpenStreetMap) 위에 그린 것이고, 점선은 도보(또는 버스) 구간을 직선으로 이은 것입니다. 핀은 각 지점의 실제 주소 위치입니다. 제휴 라운지는 포함하지 않았습니다.<br><br>* 서울로점(서울역): 서대문에서 지하철만으로 가는 경로가 없어 지하철+버스 환승 경로 25분을 썼습니다.<br>* 잠실점: 잠실역까지 도보 6분은 길찾기 값이 아닌 추정입니다.</div>
   </aside>
   <div id="map"></div>
 </div>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 <script>
+const R = {"pos":{"S":[37.5656,126.9667],"JAM":[37.5133,127.1001],"GUN":[37.5571,127.0794],"SAN":[37.5966,127.0855],"SIL":[37.4842,126.9293],"DDP":[37.56576,127.00708],"GWH":[37.571,126.97891],"GD":[37.54453,126.95137],"CH":[37.56714,126.98037],"WSR":[37.56122,127.03666],"EJR":[37.56734,126.98521],"HD":[37.55767,126.92589],"SS":[37.54282,127.05891],"SEO":[37.55706,126.97456],"YDP":[37.52519,126.92911],"JS":[37.51131,127.09814],"SNH":[37.50575,127.02742],"GN":[37.49953,127.02581],"YS":[37.50411,127.03796],"SSN":[37.50699,127.061],"SL":[37.50464,127.04549],"NB":[37.48978,126.99268]},"legs":{"S>DDP":{"pieces":[{"l":"5","f":"서대문역","t":"동대문역사문화공원역","n":4,"p":"gahdFod}eW{N}NaPwWu@aBy@sD?yf@cEia@Lcc@b@sEjCkMhBkFrB}CbBw@vYeBtBiBtAqCl@wDw@yXRwDbByIOV"},{"l":"walk","p":"wwgdFsaefWgHJ"}],"t":18,"kind":"sub"},"DDP>JAM":{"pieces":[{"l":"walk","p":"_ahdFgaefWWwE"},{"l":"2","f":"동대문역사문화공원역","t":"잠실역","n":11,"p":"wahdF_hefW`DcNb@aH_BwYo@{TDiFjB}Sb@iR|AcJzIcXvFeKb@{AJyAKe\\^}Cz@aC~AyBhB}@fRkAzZyCfIMxFc@dC}@hA}@~AmCtHu[bXgsAfRcx@dNu{@NeBCeDwFm_@YaFZkFvBmGvBmCpCoBfjA}n@|XeNhG{BhDUxCTdD`AtClBjEbFfCnI`AzE"}],"t":27,"kind":"sub"},"DDP>GUN":{"pieces":[{"l":"walk","p":"_ahdFgaefWfHK"},{"l":"5","f":"동대문역사문화공원역","t":"군자역","n":8,"p":"wwgdFsaefWdAyCnCmFrJeLdB_EpEcPpAcCdCqChD}AfH}AlCuA~ByCvAsDd@wDT}EYaHmA_GmPqc@kVgf@mX_a@kTkb@wAqEEqB|@eDbb@un@~DeH|I_hAvB}I`Qkl@M@"}],"t":22,"kind":"sub"},"DDP>SAN":{"pieces":[{"l":"walk","p":"_ahdFgaefWWwE"},{"l":"2","f":"동대문역사문화공원역","t":"왕십리역","n":3,"p":"wahdF_hefW`DcNb@aH_BwYo@{TDiFjB}Sb@iR|AcJzIcXvFeKb@{ABoH"},{"l":"gj","f":"왕십리역","t":"상봉역","n":3,"p":"ifgdFcfkfWgXjDwEO}CaA}yAedAeXeScGwGaEmHwDgKcLoVcCwHiUwdBcEy^yAyISJ"},{"l":"walk","p":"mdndFkltfWtA^"}],"t":27,"kind":"sub"},"SIL>DDP":{"pieces":[{"l":"2","f":"신림역","t":"사당역","n":4,"p":"mcxcFo}ueWsBe[@gHj@kDtK}[p@sG`Eu{@TcBz`@gvArA_IRuDIqE{DoX_AkMQyO\\aSInD"},{"l":"4","f":"사당역","t":"동대문역사문화공원역","n":11,"p":"ssvcFmb`fWqt@wAwQm@{Iy@of@L{KaCwCSwB\\iDlB{D~EuEhDgD`AsD^uD]uaAaQcOMaBNmCpA}AfEwQp{@}@dJaJtRcB|AqDjAwCGaD}A_c@eb@kJmIcA_@aC@}s@fMeLZyKCwY_EyI\\oCaAs@y@wHoX{@{A{CaD}@}BgBqIuB{Ea@_B}Boi@VaKGwMeNo_AsAiOgAuB"},{"l":"walk","p":"wwgdFsaefWgHJ"}],"t":39,"kind":"sub"},"S>GWH":{"pieces":[{"l":"5","f":"서대문역","t":"광화문역","n":1,"p":"gahdFod}eW{N}NaQmYoA_F@wM"},{"l":"walk","p":"seidFsd_fWzBqK"}],"t":12,"kind":"sub"},"GWH>JAM":{"pieces":[{"l":"walk","p":"waidFeq_fW{BpK"},{"l":"5","f":"광화문역","t":"을지로4가역","n":2,"p":"seidFsd_fWAaXcEia@Dc]\\yIfEyRnBkE~@iAbBw@hTkA"},{"l":"2","f":"을지로4가역","t":"잠실역","n":12,"p":"ofhdFqicfWE`@_@u\\`@_HfC}TtD_QZqCAsGuAsUo@{TDiFjB}SPkNnBaNzIcXvFeKb@{AJyAKe\\^}Cz@aC~AyBhB}@fRkAzZyCfIMxFc@dC}@hA}@~AmCtHu[bXgsAfRcx@dNu{@NeBCeDgGcb@AeGRqBbAqDdCeEvDsC|sA}t@bTyJlBg@hDUxCTdD`AtClBjEbFfCnI`AzE"}],"t":36,"kind":"sub"},"GWH>GUN":{"pieces":[{"l":"walk","p":"waidFeq_fW{BpK"},{"l":"5","f":"광화문역","t":"군자역","n":11,"p":"seidFsd_fWAaXcEia@Dc]\\yIfEyRnBkEzBqB|I_AxMa@fAStBiBtAqCl@wDw@yXRwDjByJl@aBnCmFrJeLdB_EpEcPpAcCdCqChD}AfH}AlCuA~ByCvAsDd@wDPkHs@wI}Qmg@kVgf@mX_a@kTkb@eAwC[oBPqBn@oBbb@un@~DeH|I_hAvB}I`Qkl@M@"}],"t":29,"kind":"sub"},"GWH>SAN":{"pieces":[{"l":"walk","p":"waidFeq_fWdDuY"},{"l":"1","f":"종각역","t":"회기역","n":8,"p":"q|hdF{k`fWDf@Ou`@iA{l@kAma@e@}l@{D}W{Gm^uMag@qKij@cAcIe@_IHwEz@mLi@{ImKaf@gCmHgCkEuGsImSsQ_DmDeE_H}GaP"},{"l":"gj","f":"회기역","t":"상봉역","n":1,"p":"kuldFc}nfWh@RkKcUkBmFq@}CoTcbBcEy^yAyISJ"},{"l":"walk","p":"mdndFkltfWtA^"}],"t":33,"kind":"sub"},"SIL>GWH":{"pieces":[{"l":"2","f":"신림역","t":"영등포구청역","n":6,"p":"mcxcFo}ueW\\nEB|Fq@hE}@hC{AjB_S`RsCvDkAhD{@tF@vFbAhH^nA|HvNxBdFtApEdGfYt@bHMxPyA|IsG`NsE`GmFrC{PxEcZ`IkJdAkMpDuFZcU{AsEVeBj@}DbCuFfCyJhGiCd@wAScAi@yNaS{AkB{AgAqCgAkNiBq^gG"},{"l":"5","f":"영등포구청역","t":"광화문역","n":10,"p":"c|_dFcmoeWfIacAb@sCfBaEvGsGpIuJxAqC~@cD|@sLCmE]cCgCyGkv@wvAiD_Ei{@kz@cCqCiXoa@o[eUuKiFkj@}TkWg\\{Y{OiIuFyNcOaQmYoA_F@wM"},{"l":"walk","p":"seidFsd_fWzBqK"}],"t":43,"kind":"sub"},"S>GD":{"pieces":[{"l":"5","f":"서대문역","t":"공덕역","n":3,"p":"gahdFod}eWfIzFzYzOjWf\\jj@|TtKhFvSxNm@k@"},{"l":"walk","p":"kxcdFybzeW}BgA"}],"t":9,"kind":"sub"},"GD>JAM":{"pieces":[{"l":"walk","p":"i|cdFaezeW|BfA"},{"l":"5","f":"공덕역","t":"을지로4가역","n":6,"p":"kxcdFybzeWl@j@wSyNuKiFkj@}TkWg\\{Y{OiIuFmHgHkE{E{N{U{A}Cy@sD?yf@cEia@Dc]PcHlAaHdCmKnBkE~@iAbBw@hTkA"},{"l":"2","f":"을지로4가역","t":"잠실역","n":12,"p":"ofhdFqicfWE`@_@u\\`@_HfC}TtD_QZqCAsGuAsUo@{TDiFjB}SPkNnBaNzIcXvFeKb@{AJyAKe\\^}Cz@aC~AyBhB}@fRkAzZyCfIMxFc@dC}@hA}@~AmCtHu[bXgsAfRcx@dNu{@NeBCeDgGcb@AeGRqBbAqDdCeEvDsC|sA}t@bTyJlBg@hDUxCTdD`AtClBjEbFfCnI`AzE"}],"t":38,"kind":"sub"},"GD>GUN":{"pieces":[{"l":"walk","p":"i|cdFaezeW|BfA"},{"l":"5","f":"공덕역","t":"군자역","n":15,"p":"kxcdFybzeWl@j@wSyNuKiFkj@}TkWg\\{Y{OiIuFmHgHkE{E{N{U{A}Cy@sD?yf@cEia@?gFD{UPcHdD{P|C_IzBqB|I_AxMa@fAStBiBtAqCl@wDw@yXRwDjByJl@aBnCmFrJeLdB_EpEcPpAcCdCqChD}AfH}AlCuA~ByCvAsDd@wDPkHs@wI}Qmg@kVgf@mX_a@kTkb@eAwC[oBPqBn@oBbb@un@~DeH|I_hAvB}I`Qkl@M@"}],"t":30,"kind":"sub"},"SIL>GD":{"pieces":[{"l":"2","f":"신림역","t":"영등포구청역","n":6,"p":"mcxcFo}ueW\\nEB|Fq@hE}@hC{AjB_S`RsCvDkAhD{@tF@vFbAhH^nA|HvNxBdFtApEdGfYt@bHMxPyA|IsG`NsE`GmFrC{PxEcZ`IkJdAkMpDuFZcU{AsEVeBj@}DbCuFfCyJhGiCd@wAScAi@yNaS{AkB{AgAqCgAkNiBq^gG"},{"l":"5","f":"영등포구청역","t":"공덕역","n":6,"p":"c|_dFcmoeWfIacAb@sCfBaEvGsGpIuJ|B_Fl@oDj@yI@iCc@gEgCyGkv@wvAiD_Ei{@kz@cCqCoVm_@_JyH"},{"l":"walk","p":"kxcdFybzeW}BgA"}],"t":29,"kind":"sub"},"S>CH":{"pieces":[{"l":"5","f":"서대문역","t":"광화문역","n":1,"p":"gahdFod}eW{N}NaQmYoA_F@wM"},{"l":"walk","p":"seidFsd_fW~ZuT"}],"t":21,"kind":"sub"},"CH>JAM":{"pieces":[{"l":"walk","p":"sihdFiz_fWlFaM"},{"l":"2","f":"을지로입구역","t":"잠실역","n":14,"p":"ebhdFkh`fW}@st@qAoi@_@u\\`@_HfC}TtD_QZqCAsG}Bid@AoMjB}Sb@iR|AcJzIcXvFeKb@{AJyAKe\\^}Cz@aC~AyBhB}@fRkAzZyCfIMxFc@dC}@hA}@~AmCtHu[bXgsAfRcx@dNu{@NeBCeDwFm_@YaFFyBp@mEjCuFvEyDfjA}n@|XeNhG{BhDUxCTdD`AtClBjEbFfCnI`AzE"}],"t":33,"kind":"sub"},"CH>GUN":{"pieces":[{"l":"walk","p":"sihdFiz_fWlFaM"},{"l":"2","f":"을지로입구역","t":"왕십리역","n":6,"p":"ebhdFkh`fW}@st@qAoi@_@u\\`@_HfC}TtD_QZqCAsG}Bid@AoMjB}Sb@iR|AcJzIcXvFeKb@{AJyAGuE"},{"l":"5","f":"왕십리역","t":"군자역","n":4,"p":"mhgdFw{jfWkUu\\kTkb@wAqEEqB|@eDbb@un@~DeH|I_hAvB}I`Qkl@M@"}],"t":29,"kind":"sub"},"GD>SAN":{"pieces":[{"l":"walk","p":"i|cdFaezeW|BfA"},{"l":"5","f":"공덕역","t":"군자역","n":15,"p":"kxcdFybzeWl@j@wSyNuKiFkj@}TkWg\\{Y{OiIuFmHgHkE{E{N{U{A}Cy@sD?yf@cEia@?gFD{UPcHdD{P|C_IzBqB|I_AxMa@fAStBiBtAqCl@wDw@yXRwDjByJl@aBnCmFrJeLdB_EpEcPpAcCdCqChD}AfH}AlCuA~ByCvAsDd@wDPkHs@wI}Qmg@kVgf@mX_a@kTkb@eAwC[oBPqBn@oBbb@un@~DeH|I_hAvB}I`Qkl@M@"},{"l":"7","f":"군자역","t":"상봉역","n":5,"p":"wkfdFgfsfW}iAyg@cVMim@kLsNcB{GV{hAhR"},{"l":"walk","p":"o~mdF}ktfWgBP"}],"t":40,"kind":"sub"},"CH>SAN":{"pieces":[{"l":"walk","p":"sihdFiz_fWlFaM"},{"l":"2","f":"을지로입구역","t":"왕십리역","n":6,"p":"ebhdFkh`fW}@st@qAoi@_@u\\`@_HfC}TtD_QZqCAsG}Bid@AoMjB}Sb@iR|AcJzIcXvFeKb@{AJyAGuE"},{"l":"gj","f":"왕십리역","t":"상봉역","n":3,"p":"ifgdFcfkfWgXjDwEO}CaA}yAedAeXeScGwGaEmHwDgKcLoVcCwHiUwdBcEy^yAyISJ"},{"l":"walk","p":"mdndFkltfWtA^"}],"t":33,"kind":"sub"},"SIL>CH":{"pieces":[{"l":"2","f":"신림역","t":"을지로입구역","n":15,"p":"mcxcFo}ueW\\nEB|Fq@hE}@hC{AjB_S`RsCvDkAhD{@tF@vFbAhH^nA|HvNxBdFtApEdGfYt@bHMxPyA|IsG`NsE`GmFrC{PxEcZ`IkJdAkMpDuFZcU{AsEVeBj@}DbCuFfCyJhGiCd@wAScAi@uQmVcE_C{gA_Qgp@ge@iv@_o@aCyAgOkEsFoDgy@wlAc@aCTqCxSkx@P}AgGoX]aEiDqwAZoRQ{BeBwGcTya@k@oB}G{e@{DsOaAwAiFeD}AiCOsDCwT"},{"l":"walk","p":"ebhdFkh`fWmF`M"}],"t":40,"kind":"sub"},"S>WSR":{"pieces":[{"l":"5","f":"서대문역","t":"을지로4가역","n":3,"p":"gahdFod}eW{N}N{N{U{A}Ca@}AWuA?yf@cEia@Dc]PcHdD{PhBkFtAaC`CsAhTkA"},{"l":"2","f":"을지로4가역","t":"왕십리역","n":4,"p":"ofhdFqicfWE`@_@u\\`@_HfC}TtD_QZqCAsGuAsUo@{TDiFjB}SPkNnBaNzIcXvFeKb@{ABoH"},{"l":"walk","p":"qdgdFe}jfWA`B"}],"t":20,"kind":"sub"},"WSR>GUN":{"pieces":[{"l":"walk","p":"sdgdFczjfWyBs@"},{"l":"5","f":"왕십리역","t":"군자역","n":4,"p":"mhgdFw{jfWkUu\\kTkb@wAqEEqB|@eDbb@un@~DeH|I_hAvB}I`Qkl@M@"}],"t":12,"kind":"sub"},"WSR>SAN":{"pieces":[{"l":"walk","p":"sdgdFczjfWu@_K"},{"l":"gj","f":"왕십리역","t":"상봉역","n":3,"p":"ifgdFcfkfWgXjDwEO}CaA}yAedAeXeScGwGaEmHwDgKcLoVcCwHiUwdBcEy^yAyISJ"},{"l":"walk","p":"mdndFkltfWtA^"}],"t":19,"kind":"sub"},"WSR>JAM":{"pieces":[{"l":"walk","p":"sdgdFczjfW@aB"},{"l":"2","f":"왕십리역","t":"잠실역","n":8,"p":"qdgdFe}jfWCoU^}Cz@aC~AyBhB}@fCU~Mu@zZyCfIMxFc@dC}@hA}@~AmCtHu[bXgsAfRcx@dNu{@NeBCeDwFm_@YaFFyBp@mEjCuFvEyDfjA}n@|XeNhG{BhDUxCTdD`AtClBjEbFfCnI`AzE"}],"t":16,"kind":"sub"},"SIL>WSR":{"pieces":[{"l":"2","f":"신림역","t":"사당역","n":4,"p":"mcxcFo}ueWsBe[@gHj@kDtK}[p@sG`Eu{@TcBz`@gvArA_IRuDIqE{DoX_AkMQyO\\aSInD"},{"l":"4","f":"사당역","t":"이촌역","n":3,"p":"ssvcFmb`fWqt@wAwQm@{Iy@of@L{KaCwCSwB\\iDlB{D~EuEhDgD`AsD^uD]uaAaQwQA{CtA}AfEqOns@"},{"l":"gj","f":"이촌역","t":"왕십리역","n":2,"p":"gr_dFon~eWfPkv@^}CLsE{@qu@]_Hu@}DuIiYeBsEuDwEeKaGaEcEcMyRsA{CoEuOcD{EmCsBsk@{ZsD}CiBgCoKuRgM}RoAwD_FeTkK{WeD}DwJgG_CyB_IgNoB}BcFwCiFi@ad@rENI"},{"l":"walk","p":"ifgdFcfkfWt@~J"}],"t":36,"kind":"sub"},"S>EJR":{"pieces":[{"l":"5","f":"서대문역","t":"충정로역","n":1,"p":"gahdFod}eWfIzFzYzO`Bm@"},{"l":"2","f":"충정로역","t":"을지로입구역","n":2,"p":"ayfdFem|eW@wCaKyRk@oB}G{e@{DsOaAwAiFeD}AiCOsDCwT"},{"l":"walk","p":"ebhdFkh`fWuGeO"}],"t":23,"kind":"sub"},"SIL>EJR":{"pieces":[{"l":"2","f":"신림역","t":"을지로입구역","n":15,"p":"mcxcFo}ueW\\nEB|Fq@hE}@hC{AjB_S`RsCvDkAhD{@tF@vFbAhH^nA|HvNxBdFtApEdGfYt@bHMxPyA|IsG`NsE`GmFrC{PxEcZ`IkJdAkMpDuFZcU{AsEVeBj@}DbCuFfCyJhGiCd@wAScAi@uQmVcE_C{gA_Qgp@ge@iv@_o@aCyAgOkEsFoDgy@wlAc@aCTqCxSkx@P}AgGoX]aEiDqwAZoRQ{BeBwGcTya@k@oB}G{e@{DsOaAwAiFeD}AiCOsDCwT"},{"l":"walk","p":"ebhdFkh`fWuGeO"}],"t":41,"kind":"sub"},"EJR>JAM":{"pieces":[{"l":"walk","p":"{jhdFqx`fWtGdO"},{"l":"2","f":"을지로입구역","t":"잠실역","n":14,"p":"ebhdFkh`fW}@st@qAoi@_@u\\`@_HfC}TtD_QZqCAsG}Bid@AoMjB}Sb@iR|AcJzIcXvFeKb@{AJyAKe\\^}Cz@aC~AyBhB}@fRkAzZyCfIMxFc@dC}@hA}@~AmCtHu[bXgsAfRcx@dNu{@NeBCeDwFm_@YaFFyBp@mEjCuFvEyDfjA}n@|XeNhG{BhDUxCTdD`AtClBjEbFfCnI`AzE"}],"t":35,"kind":"sub"},"EJR>GUN":{"pieces":[{"l":"walk","p":"{jhdFqx`fWtGdO"},{"l":"2","f":"을지로입구역","t":"왕십리역","n":6,"p":"ebhdFkh`fW}@st@qAoi@_@u\\`@_HfC}TtD_QZqCAsG}Bid@AoMjB}Sb@iR|AcJzIcXvFeKb@{AJyAGuE"},{"l":"5","f":"왕십리역","t":"군자역","n":4,"p":"mhgdFw{jfWkUu\\kTkb@wAqEEqB|@eDbb@un@~DeH|I_hAvB}I`Qkl@M@"}],"t":31,"kind":"sub"},"EJR>SAN":{"pieces":[{"l":"walk","p":"{jhdFqx`fWtGdO"},{"l":"2","f":"을지로입구역","t":"왕십리역","n":6,"p":"ebhdFkh`fW}@st@qAoi@_@u\\`@_HfC}TtD_QZqCAsG}Bid@AoMjB}Sb@iR|AcJzIcXvFeKb@{AJyAGuE"},{"l":"gj","f":"왕십리역","t":"상봉역","n":3,"p":"ifgdFcfkfWgXjDwEO}CaA}yAedAeXeScGwGaEmHwDgKcLoVcCwHiUwdBcEy^yAyISJ"},{"l":"walk","p":"mdndFkltfWtA^"}],"t":35,"kind":"sub"},"SIL>HD":{"pieces":[{"l":"2","f":"신림역","t":"홍대입구역","n":9,"p":"mcxcFo}ueW\\nEB|Fq@hE}@hC{AjB_S`RsCvDkAhD{@tF@vFbAhH^nA|HvNxBdFxBnH`FhVj@lEJvDOvMc@tDgBlGaFzJsE`GmFrCmh@rN{Dz@aHp@wJxC{En@uEC{QsAaDHwCx@}DbCuFfCyJhGiCd@wAScAi@uQmVcE_CufAiPcDqBil@kb@iv@_o@aCyAqL}CcHyD{n@u~@"},{"l":"walk","p":"}gfdFqvteWoEgN"}],"t":26,"kind":"sub"},"S>HD":{"pieces":[{"l":"5","f":"서대문역","t":"공덕역","n":3,"p":"gahdFod}eWfIzFzYzOjWf\\jj@|TtKhFvSxNm@k@"},{"l":"gj","f":"공덕역","t":"홍대입구역","n":1,"p":"kocdFyjzeWcSrk@mD`Q{BnH}BpDgBlBiMfJmBfC_Zzd@uLzYBO"},{"l":"walk","p":"infdF{iueWC`C"}],"t":21,"kind":"sub"},"HD>JAM":{"pieces":[{"l":"walk","p":"mnfdFyeueWnEfN"},{"l":"2","f":"홍대입구역","t":"잠실역","n":20,"p":"}gfdFqvteWqJeNe@eDVmBxSkx@P}AgGoX]aEiDqwA\\oNS{FeBwGcTya@k@oB}G{e@{DsOaAwAqGmE_AuCCsXuD}|B`@_HfC}TtD_QZqCAsGuAsUo@{TDiFjB}Sb@iR|AcJzIcXvFeKb@{AJyAKe\\^}Cz@aC~AyBhB}@fCU~Mu@zZyCfIMxFc@dC}@hA}@~AmCtHu[bXgsAfRcx@dNu{@NeBCeDwFm_@YaFZkFvBmGvBmCpCoBfjA}n@|XeNhG{BhDUxCTdD`AtClBjEbFfCnI`AzE"}],"t":43,"kind":"sub"},"HD>GUN":{"pieces":[{"l":"walk","p":"mnfdFyeueWnEfN"},{"l":"2","f":"홍대입구역","t":"왕십리역","n":12,"p":"}gfdFqvteWqJeNe@eDVmBxSkx@P}AgGoX]aEiDqwA\\oNS{FeBwGcTya@k@oBsFq`@uBwKaCkIyGwEiAyA]cBE_C@sTuD}|B`@_HfC}TtD_QZqCAsG}Bid@AoMjB}Sb@iR|AcJzIcXvFeKb@{AJyAGuE"},{"l":"5","f":"왕십리역","t":"군자역","n":4,"p":"mhgdFw{jfWkUu\\kTkb@wAqEEqB|@eDbb@un@~DeH|I_hAvB}I`Qkl@M@"}],"t":39,"kind":"sub"},"HD>SAN":{"pieces":[{"l":"walk","p":"mnfdFyeueWnEfN"},{"l":"2","f":"홍대입구역","t":"왕십리역","n":12,"p":"}gfdFqvteWqJeNe@eDVmBxSkx@P}AgGoX]aEiDqwA\\oNS{FeBwGcTya@k@oBsFq`@uBwKaCkIyGwEiAyA]cBE_C@sTuD}|B`@_HfC}TtD_QZqCAsG}Bid@AoMjB}Sb@iR|AcJzIcXvFeKb@{AJyAGuE"},{"l":"gj","f":"왕십리역","t":"상봉역","n":3,"p":"ifgdFcfkfWgXjDwEO}CaA}yAedAeXeScGwGaEmHwDgKcLoVcCwHiUwdBcEy^yAyISJ"},{"l":"walk","p":"mdndFkltfWtA^"}],"t":43,"kind":"sub"},"S>SS":{"pieces":[{"l":"5","f":"서대문역","t":"을지로4가역","n":3,"p":"gahdFod}eW{N}N{N{U{A}Ca@}AWuA?yf@cEia@Dc]PcHdD{PhBkFtAaC`CsAhTkA"},{"l":"2","f":"을지로4가역","t":"성수역","n":7,"p":"ofhdFqicfWE`@_@u\\`@_HfC}TtD_QZqCAsGuAsUo@{TDiFjB}SPkNnBaNzIcXvFeKb@{AJyAKe\\^}Cz@aC~AyBhB}@fRkAzZyCfIMxFc@dC}@hA}@~AmCbEqPdOat@aAnE"},{"l":"walk","p":"q|cdFssnfW|IqP"}],"t":35,"kind":"sub"},"SS>JAM":{"pieces":[{"l":"walk","p":"sqcdFeeofW}IpP"},{"l":"2","f":"성수역","t":"잠실역","n":5,"p":"q|cdFssnfWpMyo@fRcx@dNu{@NeBCeDwFm_@YaFZkFvBmGvBmCpCoBfjA}n@|XeNhG{BhDUxCTdD`AtClBjEbFfCnI`AzE"}],"t":19,"kind":"sub"},"SS>SAN":{"pieces":[{"l":"walk","p":"sqcdFeeofW}IpP"},{"l":"2","f":"성수역","t":"건대입구역","n":1,"p":"q|cdFssnfWpMyo@fKec@O~@"},{"l":"7","f":"건대입구역","t":"상봉역","n":7,"p":"wbcdF{oqfWz@\\af@iQeXoNqR{G_aBmt@cVMim@kLsNcBmBAmDX{hAhR"},{"l":"walk","p":"o~mdF}ktfWgBP"}],"t":28,"kind":"sub"},"SS>GUN":{"pieces":[{"l":"walk","p":"sqcdFeeofW}IpP"},{"l":"2","f":"성수역","t":"건대입구역","n":1,"p":"q|cdFssnfWpMyo@fKec@O~@"},{"l":"7","f":"건대입구역","t":"군자역","n":2,"p":"wbcdF{oqfWz@\\af@iQeXoNqR{GaVsK"}],"t":19,"kind":"sub"},"SIL>SS":{"pieces":[{"l":"2","f":"신림역","t":"성수역","n":19,"p":"mcxcFo}ueWsBe[@gHj@kDtK}[p@sG`Eu{@TcBz`@gvArA_IRuDIqE{DoX_AkMQyO`@oYSeHUwAyLi[eAwDoLci@m@gLuB{MwA_DiCaB_EiA{^eDeEo@iA}@gAaBeC}JeeAycF}i@omCmJofAn@m_AcCqi@gEe[gAcFgCoIkEcFuCmBwFsAaED}Cr@cTxJ}sA|t@qCnBwBlCwBlG[jFX`FvFl_@BdDOdBeNt{@gRbx@qMxo@"},{"l":"walk","p":"q|cdFssnfW|IqP"}],"t":49,"kind":"sub"},"S>SEO":{"pieces":[{"l":"bus","p":"_`hdF{d}eWjt@cp@"}],"t":13,"kind":"bus"},"SEO>JAM":{"pieces":[{"l":"walk","p":"sjfdF_v~eWgIcW"},{"l":"4","f":"회현역","t":"동대문역사문화공원역","n":3,"p":"{tfdFcn_fWm@i@}@}BgBqIuB{Ea@_B}Boi@VaKGwMeNo_AsAiOgAuB"},{"l":"2","f":"동대문역사문화공원역","t":"잠실역","n":11,"p":"wahdF_hefW`DcNb@aH_BwYo@{TDiFjB}Sb@iR|AcJzIcXvFeKb@{AJyAKe\\^}Cz@aC~AyBhB}@fRkAzZyCfIMxFc@dC}@hA}@~AmCtHu[bXgsAfRcx@dNu{@NeBCeDwFm_@YaFZkFvBmGvBmCpCoBfjA}n@|XeNhG{BhDUxCTdD`AtClBjEbFfCnI`AzE"}],"t":38,"kind":"sub"},"SEO>SAN":{"pieces":[{"l":"walk","p":"sjfdF_v~eWdEvL"},{"l":"1","f":"서울역","t":"회기역","n":10,"p":"mdfdFgh~eWWJqAWwDmAyVcQ{L}DuFsA_JMmC@iDl@YMoDb@cCiAgA{BQaCX_GUsp@mAiq@kAma@e@}l@{D}W{Gm^uMag@qKij@cAcIe@_IHwEz@mL_@wHwKeg@gCmHgCkEuGsImSsQ_DmDeE_H}GaP"},{"l":"gj","f":"회기역","t":"상봉역","n":1,"p":"kuldFc}nfWh@RkKcUkBmFq@}CoTcbBcEy^yAyISJ"},{"l":"walk","p":"mdndFkltfWtA^"}],"t":36,"kind":"sub"},"SIL>SEO":{"pieces":[{"l":"2","f":"신림역","t":"신도림역","n":4,"p":"mcxcFo}ueW\\nEB|Fq@hE}@hC{AjB_S`RsCvDkAhD{@tF@vFbAhH^nA|HvNxBdFxBnH`FhVj@lEJvDOvMc@tDgBlGaFzJsE`GmFrC_l@zOkJdAwJxC{En@uEC{QsAaDHwCx@mLjG"},{"l":"1","f":"신도림역","t":"영등포역","n":1,"p":"{}|cFemneW{Tut@qCeLuLg^"},{"l":"1","f":"영등포역","t":"서울역","n":1,"p":"_f~cFioqeWX`@yF{Sq@aEyA_YJaMvAmIxAcE|LoR|AuGRgFmA{jA_BiRwAyVc@sCkAgDwEsG_q@ax@uLaRgNiPi^}i@eDqCgFaBaGg@oa@MO]kKMc]@{DWyEy@yUmAaDc@VK"},{"l":"walk","p":"mdfdFgh~eWeEwL"}],"t":35,"kind":"sub"},"YDP>JAM":{"pieces":[{"l":"walk","p":"mc`dF}yueW~T`]"},{"l":"9","f":"여의도역","t":"종합운동장역","n":7,"p":"mm_dF{{teWxa@a`@dEwHpDkJrAmG`AuGJ}BkAau@nEm^mAw_@DeF`CaIfBoKlBkFzAmBxJyH~BaCxDcHvIqZ^uDAoGd@mDdCsIhUwk@fA{HIoEkH}k@{Fw\\oRyaAFuEn@aFtIa\\rGcQv@aDNkGM_Dw|@uoEeM_pAo@}LR_CvW}k@"},{"l":"2","f":"종합운동장역","t":"잠실역","n":2,"p":"ck}cFwarfWmCu\\n@m_AcCqi@mEm["}],"t":44,"kind":"sub"},"YDP>GUN":{"pieces":[{"l":"walk","p":"mc`dF}yueWkIkT"},{"l":"5","f":"여의나루역","t":"군자역","n":17,"p":"ym`dFioveWsFiHi{@kz@cCqCiXoa@o[eUuKiFkj@}TkWg\\{Y{OiIuFmHgHkE{E{N{U{A}Cy@sD?yf@cEia@?gFD{UPcHdD{P|C_IzBqB|I_AxMa@fAStBiBtAqCl@wDw@yXRwDjByJl@aBnCmFrJeLdB_EpEcPpAcCdCqChD}AfH}AlCuA~ByCvAsDd@wDPkHs@wI}Qmg@kVgf@mX_a@kTkb@eAwC[oBPqBn@oBbb@un@~DeH|I_hAvB}I`Qkl@M@"}],"t":43,"kind":"sub"},"SEO>GUN":{"pieces":[{"l":"walk","p":"sjfdF_v~eWgIcW"},{"l":"4","f":"회현역","t":"동대문역사문화공원역","n":3,"p":"{tfdFcn_fWm@i@}@}BgBqIuB{Ea@_B}Boi@VaKGwMeNo_AsAiOgAuB"},{"l":"5","f":"동대문역사문화공원역","t":"군자역","n":8,"p":"wwgdFsaefWdAyCnCmFrJeLdB_EpEcPpAcCdCqChD}AfH}AlCuA~ByCvAsDd@wDT}EYaHmA_GmPqc@kVgf@mX_a@kTkb@wAqEEqB|@eDbb@un@~DeH|I_hAvB}I`Qkl@M@"}],"t":32,"kind":"sub"},"S>YDP":{"pieces":[{"l":"5","f":"서대문역","t":"여의나루역","n":5,"p":"gahdFod}eWfIzFzYzOjWf\\jj@|TtKhFn[dUhXna@bCpCh{@jz@rFhH"},{"l":"walk","p":"ym`dFioveWjIjT"}],"t":22,"kind":"sub"},"YDP>SAN":{"pieces":[{"l":"walk","p":"mc`dF}yueWkIkT"},{"l":"5","f":"여의나루역","t":"군자역","n":17,"p":"ym`dFioveWsFiHi{@kz@cCqCiXoa@o[eUuKiFkj@}TkWg\\{Y{OiIuFmHgHkE{E{N{U{A}Cy@sD?yf@cEia@?gFD{UPcHdD{P|C_IzBqB|I_AxMa@fAStBiBtAqCl@wDw@yXRwDjByJl@aBnCmFrJeLdB_EpEcPpAcCdCqChD}AfH}AlCuA~ByCvAsDd@wDPkHs@wI}Qmg@kVgf@mX_a@kTkb@eAwC[oBPqBn@oBbb@un@~DeH|I_hAvB}I`Qkl@M@"},{"l":"7","f":"군자역","t":"상봉역","n":5,"p":"wkfdFgfsfW}iAyg@cVMim@kLsNcB{GV{hAhR"},{"l":"walk","p":"o~mdF}ktfWgBP"}],"t":53,"kind":"sub"},"SIL>YDP":{"pieces":[{"l":"2","f":"신림역","t":"영등포구청역","n":6,"p":"mcxcFo}ueW\\nEB|Fq@hE}@hC{AjB_S`RsCvDkAhD{@tF@vFbAhH^nA|HvNxBdFtApEdGfYt@bHMxPyA|IsG`NsE`GmFrC{PxEcZ`IkJdAkMpDuFZcU{AsEVeBj@}DbCuFfCyJhGiCd@wAScAi@yNaS{AkB{AgAqCgAkNiBq^gG"},{"l":"5","f":"영등포구청역","t":"여의나루역","n":4,"p":"c|_dFcmoeWfIacAb@sCfBaEbOqO|CiE`BcFt@sIHiFc@gEgCyGat@msA"},{"l":"walk","p":"ym`dFioveWjIjT"}],"t":34,"kind":"sub"},"S>JS":{"pieces":[{"l":"5","f":"서대문역","t":"을지로4가역","n":3,"p":"gahdFod}eW{N}N{N{U{A}Ca@}AWuA?yf@cEia@Dc]PcHdD{PhBkFtAaC`CsAhTkA"},{"l":"2","f":"을지로4가역","t":"잠실역","n":12,"p":"ofhdFqicfWE`@_@u\\`@_HfC}TtD_QZqCAsGuAsUo@{TDiFjB}SPkNnBaNzIcXvFeKb@{AJyAKe\\^}Cz@aC~AyBhB}@fRkAzZyCfIMxFc@dC}@hA}@~AmCtHu[bXgsAfRcx@dNu{@NeBCeDgGcb@AeGRqBbAqDdCeEvDsC|sA}t@bTyJlBg@hDUxCTdD`AtClBjEbFfCnI`AzE"},{"l":"walk","p":"sx}cF{fwfW|JnK"}],"t":44,"kind":"sub"},"JS>JAM":{"pieces":[{"l":"bus","p":"ul}cFkzvfWmKgK"}],"t":12,"kind":"bus"},"JS>GUN":{"pieces":[{"l":"walk","p":"ul}cFkzvfW}JoK"},{"l":"2","f":"잠실역","t":"건대입구역","n":4,"p":"sx}cF{fwfWaA{EgCoIkEcFuCmBeDaAyCUiDTiGzB}XdNgjA|n@wDrCqAhByApDq@lEGxBX`FfFv\\RzFuNz~@oF|U"},{"l":"7","f":"건대입구역","t":"군자역","n":2,"p":"wbcdF{oqfWz@\\af@iQeXoNqR{GaVsK"}],"t":24,"kind":"sub"},"JS>SAN":{"pieces":[{"l":"walk","p":"ul}cFkzvfW}JoK"},{"l":"2","f":"잠실역","t":"건대입구역","n":4,"p":"sx}cF{fwfWaA{EgCoIkEcFuCmBeDaAyCUiDTiGzB}XdNgjA|n@wDrCqAhByApDq@lEGxBX`FfFv\\RzFuNz~@oF|U"},{"l":"7","f":"건대입구역","t":"상봉역","n":7,"p":"wbcdF{oqfWz@\\af@iQeXoNqR{G_aBmt@cVMim@kLsNcBmBAmDX{hAhR"},{"l":"walk","p":"o~mdF}ktfWgBP"}],"t":33,"kind":"sub"},"SIL>JS":{"pieces":[{"l":"2","f":"신림역","t":"잠실역","n":14,"p":"mcxcFo}ueWsBe[@gHj@kDtK}[p@sG`Eu{@TcBz`@gvArA_IRuDIqE{DoX_AkMQyO`@oYSeHUwAyLi[eAwDoLci@m@gLuB{MwA_DiCaB_EiA{^eDeEo@iA}@gAaBeC}JeeAycF}i@omCmJofAn@m_AcCqi@mEm["},{"l":"walk","p":"sx}cF{fwfW|JnK"}],"t":37,"kind":"sub"},"S>SNH":{"pieces":[{"l":"5","f":"서대문역","t":"여의도역","n":6,"p":"gahdFod}eWfIzFzYzOjWf\\jj@|TtKhFn[dUhXna@bCpCh{@jz@hD~Dta@vu@"},{"l":"9","f":"여의도역","t":"신논현역","n":4,"p":"mm_dF{{teWxa@a`@dEwHpDkJrAmG`AuGJ}BkAau@nEm^mAw_@DeF`CaIfBoKlBkFzAmBxJyH~BaCxDcHvIqZ^uDAoGd@mDdCsIhUwk@`AeGCeGkH}k@{Fw\\oRyaAFuEn@aFtIa\\rGcQdAwFCaHUsBwGu\\?Z"},{"l":"walk","p":"mb|cFqohfWoFyO"}],"t":40,"kind":"sub"},"SNH>JAM":{"pieces":[{"l":"walk","p":"}i|cFk`ifWnFxO"},{"l":"9","f":"신논현역","t":"종합운동장역","n":3,"p":"mb|cFqohfWqs@{pDeM_pAo@}LR_CvW}k@"},{"l":"2","f":"종합운동장역","t":"잠실역","n":2,"p":"ck}cFwarfWmCu\\n@m_AcCqi@mEm["}],"t":25,"kind":"sub"},"SNH>GUN":{"pieces":[{"l":"walk","p":"}i|cFk`ifWhJ|O"},{"l":"sbd","f":"신논현역","t":"논현역","n":1,"p":"s~{cFmohfWlA_@ok@`T"},{"l":"7","f":"논현역","t":"군자역","n":7,"p":"qk}cFu{gfW?L}d@{zBiPo`BiHmYoA{BeAiA{EeDgoCyaAeXoNqR{GaVsK"}],"t":27,"kind":"sub"},"SNH>SAN":{"pieces":[{"l":"walk","p":"}i|cFk`ifWhJ|O"},{"l":"sbd","f":"신논현역","t":"논현역","n":1,"p":"s~{cFmohfWlA_@ok@`T"},{"l":"7","f":"논현역","t":"상봉역","n":12,"p":"qk}cFu{gfW?L}d@{zBiPo`BiHmYsBgD{BeBaE{BgmC{`AeXoNqR{G_aBmt@cVMim@kLsNcBmBAmDX{hAhR"},{"l":"walk","p":"o~mdF}ktfWgBP"}],"t":35,"kind":"sub"},"SIL>SNH":{"pieces":[{"l":"2","f":"신림역","t":"강남역","n":8,"p":"mcxcFo}ueWsBe[@gHj@kDtK}[p@sG`Eu{@TcBz`@gvArA_IRuDIqE{DoX_AkMQyO`@iVKyI]iCyLi[eAwDoLci@m@gLuB{MwA_DiCaB_EiAid@kEcAi@eB_CiG_Xsa@eqB"},{"l":"sbd","f":"강남역","t":"신논현역","n":1,"p":"{ozcFueifWZQsn@xU"},{"l":"walk","p":"s~{cFmohfWiJ}O"}],"t":34,"kind":"sub"},"S>GN":{"pieces":[{"l":"5","f":"서대문역","t":"종로3가역","n":2,"p":"gahdFod}eW{N}N{N{U{A}Ca@}AWuA?yf@cEia@DoZFhB"},{"l":"3","f":"종로3가역","t":"신사역","n":8,"p":"g~hdF_ebfWDVzEI|_@wB`He@`C{@hDeDlBcDh@iBfG}n@MaOx@uElCmFzBgClOqJ~d@w]|LgEzTkA`E}@fB}@`fAip@nN_PjAw@nCe@ng@bBdATt@dAtShp@"},{"l":"sbd","f":"신사역","t":"신논현역","n":2,"p":"ii~cFiogfW`PsC`{@o[mA^"},{"l":"walk","p":"s~{cFmohfWpZ{E"}],"t":42,"kind":"sub"},"GN>JAM":{"pieces":[{"l":"walk","p":"ac{cFivhfWhHqL"},{"l":"2","f":"강남역","t":"잠실역","n":6,"p":"wyzcF{cifWJt@y^gfB}i@omCmJofAn@m_AcCqi@mEm["}],"t":20,"kind":"sub"},"GN>GUN":{"pieces":[{"l":"walk","p":"ac{cFivhfWqZzE"},{"l":"sbd","f":"신논현역","t":"논현역","n":1,"p":"s~{cFmohfWlA_@ok@`T"},{"l":"7","f":"논현역","t":"군자역","n":7,"p":"qk}cFu{gfW?L}d@{zBiPo`BiHmYoA{BeAiA{EeDgoCyaAeXoNqR{GaVsK"}],"t":27,"kind":"sub"},"GN>SAN":{"pieces":[{"l":"walk","p":"ac{cFivhfWqZzE"},{"l":"sbd","f":"신논현역","t":"논현역","n":1,"p":"s~{cFmohfWlA_@ok@`T"},{"l":"7","f":"논현역","t":"상봉역","n":12,"p":"qk}cFu{gfW?L}d@{zBiPo`BiHmYsBgD{BeBaE{BgmC{`AeXoNqR{G_aBmt@cVMim@kLsNcBmBAmDX{hAhR"},{"l":"walk","p":"o~mdF}ktfWgBP"}],"t":36,"kind":"sub"},"SIL>GN":{"pieces":[{"l":"2","f":"신림역","t":"강남역","n":8,"p":"mcxcFo}ueWsBe[@gHj@kDtK}[p@sG`Eu{@TcBz`@gvArA_IRuDIqE{DoX_AkMQyO`@iVKyI]iCyLi[eAwDoLci@m@gLuB{MwA_DiCaB_EiAid@kEcAi@eB_CiG_Xsa@eqB"},{"l":"walk","p":"wyzcF{cifWiHpL"}],"t":26,"kind":"sub"},"S>YS":{"pieces":[{"l":"5","f":"서대문역","t":"여의도역","n":6,"p":"gahdFod}eWfIzFzYzOjWf\\jj@|TtKhFn[dUhXna@bCpCh{@jz@hD~Dta@vu@"},{"l":"9","f":"여의도역","t":"언주역","n":11,"p":"mm_dF{{teWxa@a`@dEwHpDkJrAmG`AuGJ}BkAau@nEm^mAw_@DeF`CaIfBoKlBkFzAmBxJyH~BaCxDcHvIqZ^uDAoGd@mDdCsIhUwk@`AeGCeGqAqMyEk]{Fw\\oRyaAFuE\\iDnKcb@~FcOf@mDBsDOgDcBoKaVgjA"},{"l":"walk","p":"ws|cFuhjfW`SqX"}],"t":54,"kind":"sub"},"YS>JAM":{"pieces":[{"l":"walk","p":"u_|cFgbkfWpSfE"},{"l":"2","f":"역삼역","t":"잠실역","n":5,"p":"ck{cF_|jfW_x@}zDmJofAn@m_AcCqi@mEm["}],"t":20,"kind":"sub"},"YS>GUN":{"pieces":[{"l":"walk","p":"u_|cFgbkfWpSfE"},{"l":"2","f":"역삼역","t":"선릉역","n":1,"p":"ck{cF_|jfWyU}iA"},{"l":"sb","f":"선릉역","t":"강남구청역","n":2,"p":"}a|cF}fmfWWKqE~AyCbBiJlQsBjB_DlAal@`P"},{"l":"7","f":"강남구청역","t":"군자역","n":5,"p":"kq~cFawkfWmPq`BiHmYsBgD}HaFgmC{`AeXoNqR{GaVsK"}],"t":29,"kind":"sub"},"YS>SAN":{"pieces":[{"l":"walk","p":"u_|cFgbkfWaSpX"},{"l":"9","f":"언주역","t":"선정릉역","n":1,"p":"ws|cFuhjfWPj@oRgaARlA"},{"l":"sb","f":"선정릉역","t":"강남구청역","n":1,"p":"ai}cFaflfWHIie@nM"},{"l":"7","f":"강남구청역","t":"상봉역","n":10,"p":"kq~cFawkfWmPq`BaIwZ}B{C{EeDgoCyaAeXoNqR{G_aBmt@cVMim@kLsNcBmBAmDX{hAhR"},{"l":"walk","p":"o~mdF}ktfWgBP"}],"t":37,"kind":"sub"},"SIL>YS":{"pieces":[{"l":"2","f":"신림역","t":"역삼역","n":9,"p":"mcxcFo}ueWsBe[@gHj@kDtK}[p@sG`Eu{@TcBz`@gvArA_IRuDIqE{DoX_AkMQyO`@iVKyI]iCyLi[eAwDoLci@m@gLuB{MwA_DiCaB_EiAid@kEcAi@eB_CiG_X_s@iiD"},{"l":"walk","p":"ck{cF_|jfWqSgE"}],"t":30,"kind":"sub"},"S>SSN":{"pieces":[{"l":"5","f":"서대문역","t":"왕십리역","n":8,"p":"gahdFod}eW{N}NaPwWu@aBy@sD?yf@cEia@Dc]PcHlAaHdCmKnBkE~@iAbBw@tHo@xMa@fAStBiBtAqCl@wDw@yXRwDjByJl@aBnCmFrJeLdB_EpEcPpAcCdCqChD}AfH}AlCuA~ByCvAsDz@uKYaH]cC}Qmg@kVgf@aBiC"},{"l":"sb","f":"왕십리역","t":"선릉역","n":5,"p":"ifgdFcfkfWW_@hV{BzTaDlDyB`BeCxEcKnC}B~QeB~SqAnF`@lQbDhMp@rn@dKpm@hOr@Abf@cMpn@gQhBaArAsAhJmQxCcBpE_BVJ"},{"l":"2","f":"선릉역","t":"삼성역","n":1,"p":"}a|cF}fmfW{WgqAaAsEKD"},{"l":"walk","p":"g}|cFs_pfWpJjL"}],"t":48,"kind":"sub"},"SSN>JAM":{"pieces":[{"l":"walk","p":"uq|cFgrofWqJkL"},{"l":"2","f":"삼성역","t":"잠실역","n":3,"p":"g}|cFs_pfWJEgFcWmJofAn@m_AcCqi@mEm["}],"t":13,"kind":"sub"},"SSN>GUN":{"pieces":[{"l":"walk","p":"uq|cFgrofWqJkL"},{"l":"2","f":"삼성역","t":"선릉역","n":1,"p":"g}|cFs_pfWJE`ArEzWfqA"},{"l":"sb","f":"선릉역","t":"강남구청역","n":2,"p":"}a|cF}fmfWWKqE~AyCbBiJlQsBjB_DlAal@`P"},{"l":"7","f":"강남구청역","t":"군자역","n":5,"p":"kq~cFawkfWmPq`BiHmYsBgD}HaFgmC{`AeXoNqR{GaVsK"}],"t":27,"kind":"sub"},"SSN>SAN":{"pieces":[{"l":"walk","p":"uq|cFgrofWqJkL"},{"l":"2","f":"삼성역","t":"선릉역","n":1,"p":"g}|cFs_pfWJE`ArEzWfqA"},{"l":"sb","f":"선릉역","t":"강남구청역","n":2,"p":"}a|cF}fmfWWKqE~AyCbBiJlQsBjB_DlAal@`P"},{"l":"7","f":"강남구청역","t":"상봉역","n":10,"p":"kq~cFawkfWmPq`BaIwZ}B{C{EeDgoCyaAeXoNqR{G_aBmt@cVMim@kLsNcBmBAmDX{hAhR"},{"l":"walk","p":"o~mdF}ktfWgBP"}],"t":36,"kind":"sub"},"SIL>SSN":{"pieces":[{"l":"2","f":"신림역","t":"삼성역","n":11,"p":"mcxcFo}ueWsBe[@gHj@kDtK}[p@sG`Eu{@TcBz`@gvArA_IRuDIqE{DoX_AkMQyO`@oYSeHUwAyLi[eAwDoLci@m@gLuB{MwA_DiCaB_EiAid@kEcAi@eB_CiG_XaaAwvE}WirAwIab@KD"},{"l":"walk","p":"g}|cFs_pfWpJjL"}],"t":32,"kind":"sub"},"S>SL":{"pieces":[{"l":"5","f":"서대문역","t":"을지로4가역","n":3,"p":"gahdFod}eW{N}N{N{U{A}Ca@}AWuA?yf@cEia@Dc]PcHdD{PhBkFtAaC`CsAhTkA"},{"l":"2","f":"을지로4가역","t":"왕십리역","n":4,"p":"ofhdFqicfWE`@_@u\\`@_HfC}TtD_QZqCAsGuAsUo@{TDiFjB}SPkNnBaNzIcXvFeKb@{ABoH"},{"l":"sb","f":"왕십리역","t":"선릉역","n":5,"p":"ifgdFcfkfWW_@hV{BzTaDlDyB`BeCxEcKnC}B~QeB~SqAnF`@lQbDhMp@rn@dKpm@hOr@Abf@cMpn@gQhBaArAsAhJmQxCcBpE_BVJ"},{"l":"walk","p":"}a|cF}fmfWa@rT"}],"t":43,"kind":"sub"},"SL>JAM":{"pieces":[{"l":"walk","p":"_c|cFiqlfW`@sT"},{"l":"2","f":"선릉역","t":"잠실역","n":4,"p":"}a|cF}fmfWea@_pBmJofAn@m_AcCqi@mEm["}],"t":16,"kind":"sub"},"SL>GUN":{"pieces":[{"l":"walk","p":"_c|cFiqlfW`@sT"},{"l":"sb","f":"선릉역","t":"강남구청역","n":2,"p":"}a|cF}fmfWWKqE~AyCbBiJlQsBjB_DlAal@`P"},{"l":"7","f":"강남구청역","t":"군자역","n":5,"p":"kq~cFawkfWmPq`BiHmYsBgD}HaFgmC{`AeXoNqR{GaVsK"}],"t":24,"kind":"sub"},"SIL>SL":{"pieces":[{"l":"2","f":"신림역","t":"선릉역","n":10,"p":"mcxcFo}ueWsBe[@gHj@kDtK}[p@sG`Eu{@TcBz`@gvArA_IRuDIqE{DoX_AkMQyO`@oYSeHUwAyLi[eAwDoLci@m@gLuB{MwA_DiCaB_EiAid@kEcAi@eB_CiG_XyiAgtF"},{"l":"walk","p":"}a|cF}fmfWa@rT"}],"t":30,"kind":"sub"},"S>NB":{"pieces":[{"l":"5","f":"서대문역","t":"종로3가역","n":2,"p":"gahdFod}eW{N}N{N{U{A}Ca@}AWuA?yf@cEia@DoZFhB"},{"l":"3","f":"종로3가역","t":"고속터미널역","n":10,"p":"g~hdF_ebfWDVzEI|_@wB`He@`C{@hDeDlBcDh@iBfG}n@MaOx@uElCmFzBgClOqJ~d@w]|LgEzTkA`E}@fB}@hbAom@xCuBlMcOjAw@~Ac@~h@`B`Bn@nTbr@jF`UpFjPfV|n@dApBhCbC`Br@dEZfFe@jGmC"},{"l":"7","f":"고속터미널역","t":"내방역","n":1,"p":"oe|cFwsdfWpFmAz@hDpBbDdBhBhCpAhE|@``@tB|JrDxGfEvJ|E~CtChA~AtA~DhE`R"},{"l":"walk","p":"yxxcFulbfWiLlD"}],"t":43,"kind":"sub"},"NB>JAM":{"pieces":[{"l":"walk","p":"cfycFggbfWhLmD"},{"l":"7","f":"내방역","t":"강남구청역","n":5,"p":"yxxcFulbfWiEaRuA_EiA_B_DuCwJ}EyGgE}JsDa`@uB_HgByCqCqBcDgDaM}AoDoMgJuA_BwB}Iew@mxD"},{"l":"sb","f":"강남구청역","t":"선릉역","n":2,"p":"ao~cF{wkfW`l@aP~CmArBkBhJmQxCcBpE_BVJ"},{"l":"2","f":"선릉역","t":"잠실역","n":4,"p":"}a|cF}fmfWea@_pBmJofAn@m_AcCqi@mEm["}],"t":31,"kind":"sub"},"NB>SAN":{"pieces":[{"l":"walk","p":"cfycFggbfWhLmD"},{"l":"7","f":"내방역","t":"상봉역","n":15,"p":"yxxcFulbfWiEaRuA_EiA_B_DuCwJ}EyGgE}JsDa`@uB_HgByCqCqBcDgDaM}AoDoMgJeByBkz@abEoPaaBiHmYuCeE{GcEgmC{`AeXoNqR{G_aBmt@cVMim@kLsNcBmBAmDX{hAhR"},{"l":"walk","p":"o~mdF}ktfWgBP"}],"t":35,"kind":"sub"},"SL>SAN":{"pieces":[{"l":"walk","p":"_c|cFiqlfW`@sT"},{"l":"sb","f":"선릉역","t":"강남구청역","n":2,"p":"}a|cF}fmfWWKqE~AyCbBiJlQsBjB_DlAal@`P"},{"l":"7","f":"강남구청역","t":"상봉역","n":10,"p":"kq~cFawkfWmPq`BaIwZ}B{C{EeDgoCyaAeXoNqR{G_aBmt@cVMim@kLsNcBmBAmDX{hAhR"},{"l":"walk","p":"o~mdF}ktfWgBP"}],"t":33,"kind":"sub"},"NB>GUN":{"pieces":[{"l":"walk","p":"cfycFggbfWhLmD"},{"l":"7","f":"내방역","t":"군자역","n":10,"p":"yxxcFulbfWiEaRuA_EiA_B_DuCwJ}EyGgE}JsDa`@uB_HgByCqCqBcDgDaM}AoDoMgJeByBqz@sbEiPo`BiHmYoA{BeAiA{EeDgoCyaAeXoNqR{GaVsK"}],"t":26,"kind":"sub"},"SIL>NB":{"pieces":[{"l":"2","f":"신림역","t":"방배역","n":5,"p":"mcxcFo}ueWsBe[@gHj@kDtK}[p@sG`Eu{@TcBz`@gvAbAiFb@kGIqE{DoX_AkMQyO`@oYSeHUwAyMy]{Mql@"},{"l":"walk","p":"erwcFufcfW}r@l^"}],"t":29,"kind":"sub"}}};
+const dec=s=>{let i=0,la=0,lo=0;const o=[];while(i<s.length){for(let t=0;t<2;t++){let sh=0,res=0,b;do{b=s.charCodeAt(i++)-63;res|=(b&31)<<sh;sh+=5}while(b>=32);const d=(res&1)?~(res>>1):res>>1;if(t===0)la+=d;else lo+=d;}o.push([la/1e5,lo/1e5]);}return o;};
+const LC={'1':'#0052A4','2':'#00A84D','3':'#EF7C1C','4':'#00A5DE','5':'#996CAC','6':'#CD7C2F','7':'#747F00','8':'#E6186C','9':'#BDB092',gj:'#77C4A3',sb:'#F5A200',sbd:'#D4003B',ap:'#0090D2',sl:'#6789CA'};
+const LN={gj:'경의중앙선',sb:'수인분당선',sbd:'신분당선',ap:'공항철도',sl:'신림선'};
+const lname=l=>LN[l]||l+'호선';
+const sn=n=>n.replace(/역$/,'');
+
 const SRC = {
-  seodaemun:{n:'서대문 (3명 출발)', pos:[37.5656,126.9667]},
-  jamsil:   {n:'잠실 (집)',        pos:[37.5133,127.1001]},
-  gunja:    {n:'군자 (집)',        pos:[37.5571,127.0794]},
-  sangbong:{n:'상봉 (집)',        pos:[37.5966,127.0855]},
-  sillim:   {n:'신림 (하루 종일)', pos:[37.4842,126.9293]}
+  S:  {n:'서대문 (3명 출발)', pos:R.pos.S},
+  JAM:{n:'잠실 (집)',        pos:R.pos.JAM},
+  GUN:{n:'군자 (집)',        pos:R.pos.GUN},
+  SAN:{n:'상봉 (집)',        pos:R.pos.SAN},
+  SIL:{n:'신림 (하루 종일)', pos:R.pos.SIL}
 };
-// s: 서대문→지점, j/g/b: 지점→잠실/군자/상봉, l: 신림↔지점 편도
+// k: 길찾기 키, s: 서대문→지점, j/g/b: 지점→잠실/군자/상봉, li/lo: 신림→지점, 지점→신림
 const C = [
-  {n:'동대문(DDP)',   pos:[37.5651,127.0079], s:18, j:27, g:22, b:27, li:39, lo:39},
-  {n:'광화문',        pos:[37.5712,126.9769], s:12, j:36, g:29, b:33, li:43, lo:43},
-  {n:'공덕역',        pos:[37.5440,126.9516], s:9,  j:38, g:30, b:40, li:29, lo:29},
-  {n:'시청',          pos:[37.5657,126.9769], s:21, j:33, g:29, b:33, li:40, lo:40},
-  {n:'왕십리',        pos:[37.5612,127.0371], s:20, j:16, g:12, b:19, li:36, lo:37},
-  {n:'을지로센터원',  pos:[37.5660,126.9822], s:23, j:35, g:31, b:35, li:41, lo:42},
-  {n:'홍대점',        pos:[37.5568,126.9237], s:21, j:43, g:39, b:43, li:26, lo:26},
-  {n:'성수점',        pos:[37.5446,127.0558], s:35, j:19, g:19, b:28, li:49, lo:49},
-  {n:'서울로(서울역)',pos:[37.5547,126.9707], s:25, j:38, g:32, b:36, li:35, lo:37, star:'a'},
+  {k:'DDP',n:'동대문(DDP)',   s:18, j:27, g:22, b:27, li:39, lo:39},
+  {k:'GWH',n:'광화문',        s:12, j:36, g:29, b:33, li:43, lo:43},
+  {k:'GD', n:'공덕역',        s:9,  j:38, g:30, b:40, li:29, lo:29},
+  {k:'CH', n:'시청',          s:21, j:33, g:29, b:33, li:40, lo:40},
+  {k:'WSR',n:'왕십리',        s:20, j:16, g:12, b:19, li:36, lo:37},
+  {k:'EJR',n:'을지로센터원',  s:23, j:35, g:31, b:35, li:41, lo:42},
+  {k:'HD', n:'홍대점',        s:21, j:43, g:39, b:43, li:26, lo:26},
+  {k:'SS', n:'성수점',        s:35, j:19, g:19, b:28, li:49, lo:49},
+  {k:'SEO',n:'서울로(서울역)',s:25, j:38, g:32, b:36, li:35, lo:37, star:'a'},
   // 서울강남 탭
-  {n:'여의도(파크원)',pos:[37.5256,126.9268], s:22, j:45, g:43, b:53, li:34, lo:34, gn:1},
-  {n:'잠실점(롯데월드)',pos:[37.5126,127.1025],s:44, j:6,  g:24, b:33, li:37, lo:37, gn:1, star:'b'},
-  {n:'신논현점',      pos:[37.5045,127.0250], s:41, j:25, g:27, b:35, li:34, lo:33, gn:1},
-  {n:'강남4·6호점',   pos:[37.4979,127.0276], s:42, j:20, g:27, b:36, li:26, lo:26, gn:1},
-  {n:'역삼2호점',     pos:[37.5006,127.0364], s:54, j:20, g:29, b:37, li:30, lo:29, gn:1},
-  {n:'삼성2호·코엑스',pos:[37.5100,127.0610], s:48, j:13, g:27, b:36, li:32, lo:31, gn:1},
-  {n:'선릉3호점',     pos:[37.5045,127.0490], s:43, j:16, g:24, b:33, li:30, lo:30, gn:1},
-  {n:'방배점(내방)',  pos:[37.4876,126.9933], s:43, j:31, g:26, b:35, li:29, lo:30, gn:1}
+  {k:'YDP',n:'여의도(파크원)',s:22, j:45, g:43, b:53, li:34, lo:34, gn:1},
+  {k:'JS', n:'잠실점(롯데월드)',s:44,j:6,  g:24, b:33, li:37, lo:37, gn:1, star:'b'},
+  {k:'SNH',n:'신논현점',      s:41, j:25, g:27, b:35, li:34, lo:33, gn:1},
+  {k:'GN', n:'강남4·6호점',   s:42, j:20, g:27, b:36, li:26, lo:26, gn:1},
+  {k:'YS', n:'역삼2호점',     s:54, j:20, g:29, b:37, li:30, lo:29, gn:1},
+  {k:'SSN',n:'삼성2호·코엑스',s:48, j:13, g:27, b:36, li:32, lo:31, gn:1},
+  {k:'SL', n:'선릉3호점',     s:43, j:16, g:24, b:33, li:30, lo:30, gn:1},
+  {k:'NB', n:'방배점(내방)',  s:43, j:31, g:26, b:35, li:29, lo:30, gn:1}
 ];
+C.forEach(c=>{c.pos=R.pos[c.k];});
 // 평소 서대문 출퇴근(카카오맵 지하철): 잠실·군자·상봉은 서대문→집 편도, 신림은 신림→서대문 38분 + 서대문→신림 39분
 const BASE={jamsil:36,gunja:28,sangbong:39,sillim:77};
 const fmt=v=>v>0?'+'+v:v<0?'−'+Math.abs(v):'0';
-C.forEach(c=>{
-  const t={jamsil:c.s+c.j, gunja:c.s+c.g, sangbong:c.s+c.b, sillim:c.li+c.lo};
-  c.raw=t.jamsil+t.gunja+t.sangbong+t.sillim;
-  c.t={jamsil:t.jamsil-BASE.jamsil, gunja:t.gunja-BASE.gunja, sangbong:t.sangbong-BASE.sangbong, sillim:t.sillim-BASE.sillim};
-  c.sum=c.t.jamsil+c.t.gunja+c.t.sangbong+c.t.sillim;
-  c.max=Math.max(c.t.jamsil,c.t.gunja,c.t.sangbong,c.t.sillim);
-});
-C.sort((a,b)=>a.sum-b.sum);
 const TOP=['#2f9e44','#1c7ed6','#e8590c','#c2255c','#0c8599'];
-C.forEach((c,i)=>{
-  c.rank=i+1;
-  c.color = i<5 ? TOP[i] : 'hsl('+((i*53)%360)+',62%,42%)';
-  c.on=(i===0);
-});
-let focus = 0;
+let mode='office', fc=null;
+
+function calc(){
+  C.forEach(c=>{
+    if(mode==='office'){
+      c.t={jamsil:c.s+c.j-BASE.jamsil, gunja:c.s+c.g-BASE.gunja, sangbong:c.s+c.b-BASE.sangbong, sillim:c.li+c.lo-BASE.sillim};
+    }else{
+      // 집→지점 + 지점→집(같은 시간 가정) − 서대문 왕복
+      c.t={jamsil:2*c.j-2*BASE.jamsil, gunja:2*c.g-2*BASE.gunja, sangbong:2*c.b-2*BASE.sangbong, sillim:c.li+c.lo-BASE.sillim};
+    }
+    c.sum=c.t.jamsil+c.t.gunja+c.t.sangbong+c.t.sillim;
+    c.max=Math.max(c.t.jamsil,c.t.gunja,c.t.sangbong,c.t.sillim);
+    c.raw=mode==='office' ? (c.s+c.j)+(c.s+c.g)+(c.s+c.b)+c.li+c.lo : 2*(c.j+c.g+c.b)+c.li+c.lo;
+  });
+  C.sort((a,b)=>a.sum-b.sum||a.max-b.max);
+  C.forEach((c,i)=>{c.rank=i+1;c.color=i<5?TOP[i]:'hsl('+((i*53)%360)+',62%,42%)';});
+}
 
 const map = L.map('map').setView([37.545,127.0],11);
 L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:18,attribution:'&copy; OpenStreetMap contributors'}).addTo(map);
 
 // 고정 지점(서대문, 집)
+const fixed = L.layerGroup().addTo(map);
 function dot(pos,color,label,dir,off){
-  L.circleMarker(pos,{radius:7,color:'#222',weight:1.5,fillColor:color,fillOpacity:.95}).addTo(map)
+  return L.circleMarker(pos,{radius:7,color:'#222',weight:1.5,fillColor:color,fillOpacity:.95}).addTo(fixed)
    .bindTooltip(label,{permanent:true,direction:dir||'right',offset:off||[8,0],className:'lbl'});
 }
-dot(SRC.seodaemun.pos,'#444',SRC.seodaemun.n,'top',[0,-8]);
-dot(SRC.jamsil.pos,'#888',SRC.jamsil.n);
-dot(SRC.gunja.pos,'#888',SRC.gunja.n);
-dot(SRC.sangbong.pos,'#888',SRC.sangbong.n);
-dot(SRC.sillim.pos,'#888',SRC.sillim.n);
-
-// 후보 번호 핀
-const pins = C.map(c=>{
-  const m = L.marker(c.pos,{zIndexOffset:1000-c.rank, icon:iconFor(c,false)}).addTo(map);
-  m.bindTooltip(c.rank+'위 '+c.n+' · 평소 대비 '+fmt(c.sum)+'분',{direction:'top',offset:[0,-14]});
-  m.on('click',()=>{c.on=true;focus=c.rank-1;render();});
-  return m;
+const homes=L.layerGroup().addTo(map);
+['JAM','GUN','SAN','SIL'].forEach(k=>{
+  L.circleMarker(SRC[k].pos,{radius:7,color:'#222',weight:1.5,fillColor:'#888',fillOpacity:.95}).addTo(homes)
+   .bindTooltip(SRC[k].n,{permanent:true,direction:'right',offset:[8,0],className:'lbl'});
 });
+const office=L.layerGroup();
+L.circleMarker(SRC.S.pos,{radius:7,color:'#222',weight:1.5,fillColor:'#444',fillOpacity:.95}).addTo(office)
+ .bindTooltip(SRC.S.n,{permanent:true,direction:'top',offset:[0,-8],className:'lbl'});
+
 function iconFor(c,on){
   return L.divIcon({className:'',iconSize:null,iconAnchor:on?[16,16]:[13,13],
     html:'<div class="pin'+(on?' on':'')+(c.gn?' sq':'')+'" style="background:'+c.color+'">'+c.rank+'</div>'});
 }
+C.forEach(c=>{
+  c.pin=L.marker(c.pos,{icon:iconFor(c,false)}).addTo(map);
+  c.pin.on('click',()=>{c.on=true;fc=c;render();});
+});
 
 const lines = L.layerGroup().addTo(map);
-function seg(a,b,color,text,dash,focused){
-  L.polyline([a,b],{color,weight:focused?4:2.5,opacity:focused?.9:.55,dashArray:dash}).addTo(lines);
-  if(focused){
-    const mid=[(a[0]+b[0])/2,(a[1]+b[1])/2];
-    L.marker(mid,{opacity:0,interactive:false}).addTo(lines)
-     .bindTooltip(text,{permanent:true,direction:'center',className:'lbl'});
+const legOf=(c,dest)=>{
+  // 반환: {key, from, to}  (표시용 방향)
+  if(dest==='S') return {key:'S>'+c.k, from:SRC.S.pos, to:c.pos};
+  if(dest==='SIL') return {key:'SIL>'+c.k, from:SRC.SIL.pos, to:c.pos};
+  return {key:c.k+'>'+dest, from:c.pos, to:SRC[dest].pos};
+};
+const legMin=(c,dest)=>({S:c.s,JAM:c.j,GUN:c.g,SAN:c.b,SIL:c.li})[dest];
+const destName={S:'서대문',JAM:'잠실',GUN:'군자',SAN:'상봉',SIL:'신림'};
+
+function drawLeg(c,dest,focused){
+  const L0=R.legs[legOf(c,dest).key];
+  if(!L0) return;
+  const m=legMin(c,dest);
+  const tip=(dest==='S'?'서대문 → '+c.n:dest==='SIL'?'신림 → '+c.n:c.n+' → '+destName[dest])+' '+m+'분';
+  let mid=null, longest=0;
+  L0.pieces.forEach((p,pi)=>{
+    const pts=dec(p.p);
+    const isRide=!!LC[p.l];
+    if(isRide){
+      if(focused) L.polyline(pts,{color:'#fff',weight:9,opacity:.85}).addTo(lines);
+      const pl=L.polyline(pts,{color:focused?LC[p.l]:c.color,weight:focused?5:3,opacity:focused?.95:.6}).addTo(lines);
+      if(focused) pl.bindTooltip(lname(p.l)+' '+sn(p.f)+' → '+sn(p.t)+' ('+p.n+'개 역)',{sticky:true});
+      if(pts.length>longest){longest=pts.length;mid=pts[pts.length>>1];}
+      if(focused){ // 환승역 표시
+        const nx=L0.pieces[pi+1];
+        if(nx&&LC[nx.l]) L.circleMarker(pts[pts.length-1],{radius:5,color:'#222',weight:1.5,fillColor:'#fff',fillOpacity:1}).addTo(lines).bindTooltip('환승 '+sn(p.t),{direction:'top'});
+      }
+    }else{
+      L.polyline(pts,{color:focused?'#555':c.color,weight:focused?3:2,opacity:focused?.9:.55,dashArray:'2 6'}).addTo(lines);
+      if(!mid&&!longest){mid=pts[0];}
+    }
+  });
+  if(focused&&mid){
+    L.marker(mid,{opacity:0,interactive:false}).addTo(lines).bindTooltip(tip,{permanent:true,direction:'center',className:'lbl'});
   }
 }
 
+function legend(){
+  const c=fc, f=c;
+  const desc=(dest)=>{
+    const l=R.legs[legOf(c,dest).key];
+    if(!l) return '';
+    if(l.kind!=='sub') return '<span class="lt" style="background:#868e96">'+(l.kind==='bus'?'지하철+버스':'도보')+'</span>';
+    return l.pieces.filter(p=>LC[p.l]).map(p=>'<span class="lt" style="background:'+LC[p.l]+'">'+lname(p.l)+'</span>'+sn(p.f)+'→'+sn(p.t)).join(' ');
+  };
+  const row=(label,dest,m)=>'<span class="leg">'+label+' <b>'+m+'분</b> '+desc(dest)+'</span>';
+  let h='<b>'+f.rank+'위 '+f.n+(f.star?'*':'')+' 구간별 경로</b>';
+  if(mode==='office'){
+    h+=row('서대문 → '+f.n,'S',f.s);
+    h+=row(f.n+' → 잠실','JAM',f.j)+row(f.n+' → 군자','GUN',f.g)+row(f.n+' → 상봉','SAN',f.b);
+  }else{
+    h+=row('잠실 집 ↔ '+f.n+' (편도)','JAM',f.j)+row('군자 집 ↔ '+f.n+' (편도)','GUN',f.g)+row('상봉 집 ↔ '+f.n+' (편도)','SAN',f.b);
+  }
+  h+=row('신림 → '+f.n,'SIL',f.li);
+  h+='<span class="leg">'+f.n+' → 신림 '+f.lo+'분 (신림 왕복 '+(f.li+f.lo)+'분, 평소 77분 대비 '+fmt(f.li+f.lo-77)+'분)</span>';
+  h+='<span class="leg">4명 합계 이동시간 '+f.raw+'분 = 평소 대비 <b>'+fmt(f.sum)+'분</b>, 가장 많이 늘어나는 사람 '+fmt(f.max)+'분.</span>';
+  return h;
+}
+
 function render(){
-  // 표
   const best = k => Math.min(...C.map(c=>k==='sum'||k==='max'?c[k]:c.t[k]));
   const rows = document.getElementById('rows');
   rows.innerHTML='';
-  C.forEach((c,i)=>{
+  C.forEach(c=>{
     const tr=document.createElement('tr');
-    tr.className='cand'+(i===focus?' focus':'');
+    tr.className='cand'+(c===fc?' focus':'');
     const cell=(k,v)=>'<td class="'+(v===best(k)?'min':'')+'">'+fmt(v)+'</td>';
     tr.innerHTML=
-      '<td><label><input type="checkbox" '+(c.on?'checked':'')+' data-i="'+i+'"><span class="rank" style="background:'+c.color+'">'+c.rank+'</span><span class="name">'+c.n+(c.star?'*':'')+'</span>'+(c.gn?'<span class="tag">강남</span>':'')+'</label></td>'+
+      '<td><label><input type="checkbox" '+(c.on?'checked':'')+'><span class="rank" style="background:'+c.color+'">'+c.rank+'</span><span class="name">'+c.n+(c.star?'*':'')+'</span>'+(c.gn?'<span class="tag">강남</span>':'')+'</label></td>'+
       cell('jamsil',c.t.jamsil)+cell('gunja',c.t.gunja)+cell('sangbong',c.t.sangbong)+cell('sillim',c.t.sillim)+cell('sum',c.sum)+cell('max',c.max);
     tr.addEventListener('click',e=>{
-      if(e.target.tagName==='INPUT'){c.on=e.target.checked; if(c.on)focus=i;}
-      else{c.on=true;focus=i;}
+      if(e.target.tagName==='INPUT'){c.on=e.target.checked; if(c.on)fc=c;}
+      else{c.on=true;fc=c;}
       render();
     });
     rows.appendChild(tr);
   });
-  // 핀 강조
-  C.forEach((c,i)=>pins[i].setIcon(iconFor(c,c.on&&i===focus)));
+  const bb=mode==='office'?[36,28,39,77]:[72,56,78,77];
+  document.getElementById('baserow').innerHTML='<td>'+(mode==='office'?'평소 서대문 기준':'평소 서대문 왕복')+'</td>'+bb.map(v=>'<td>'+v+'</td>').join('')+'<td></td><td></td>';
+  document.getElementById('sub').innerHTML = mode==='office'
+    ? '평소 서대문 출퇴근 동선 대비 <b>늘어나는 이동시간(분)</b>이 적은 순서입니다. 시간은 카카오맵 대중교통 길찾기에서 <b>각 지점 주소를 도착지로</b> 조회해 지하철 경로만 골라 읽은 값(도보 포함)입니다. 서대문 출발 3명은 "서대문→지점→집"에서 "서대문→집"을 뺀 값이고, 신림은 "신림→지점→신림"에서 "신림→서대문→신림"을 뺀 값입니다. 마이너스는 평소보다 짧아진다는 뜻입니다. 네모 핀은 서울강남 탭 지점입니다.'
+    : '회사(서대문)를 들르지 않고 <b>집에서 지점으로 바로 출근했다가 퇴근</b>하는 경우입니다. 잠실·군자·상봉은 "집→지점→집" 왕복에서 평소 "집↔서대문" 왕복을 뺀 값이고, 집→지점은 지점→집과 같은 시간으로 가정했습니다. 신림은 위와 같습니다. 마이너스는 평소 출퇴근보다 짧아진다는 뜻입니다. 네모 핀은 서울강남 탭 지점입니다.';
+  C.forEach(c=>c.pin.setIcon(iconFor(c,c.on&&c===fc)).setZIndexOffset(1000-c.rank+(c===fc?500:0)));
   // 선
   lines.clearLayers();
-  C.forEach((c,i)=>{
+  C.forEach(c=>{
     if(!c.on) return;
-    const f=(i===focus);
-    seg(SRC.seodaemun.pos,c.pos,c.color,'서대문→'+c.n+' '+c.s+'분',null,f);
-    if(c.j>0) seg(c.pos,SRC.jamsil.pos,c.color,'잠실 '+c.j+'분',null,f);
-    seg(c.pos,SRC.gunja.pos,c.color,'군자 '+c.g+'분',null,f);
-    seg(c.pos,SRC.sillim.pos,c.color,'신림 '+c.li+'+'+c.lo+'분',null,f);
-    seg(c.pos,SRC.sangbong.pos,c.color,'상봉 '+c.b+'분',null,f);
+    const f=(c===fc);
+    if(mode==='office') drawLeg(c,'S',f);
+    drawLeg(c,'JAM',f);drawLeg(c,'GUN',f);drawLeg(c,'SAN',f);drawLeg(c,'SIL',f);
   });
-  // 범례
-  const fc=C[focus];
-  document.getElementById('legend').innerHTML=
-    '<b>'+fc.rank+'위 '+fc.n+' 구간별 시간</b><br>'+
-    '서대문 → '+fc.n+' '+fc.s+'분 (도착용)<br>'+
-    fc.n+' → 잠실 '+(fc.j>0?fc.j+'분':'0분 (이미 도착)')+' · 군자 '+fc.g+'분 · 상봉 '+fc.b+'분<br>'+
-    '신림 → '+fc.n+' '+fc.li+'분, '+fc.n+' → 신림 '+fc.lo+'분<br>'+
-    '신림은 왕복 '+(fc.li+fc.lo)+'분이라 평소(77분) 대비 '+fmt(fc.li+fc.lo-77)+'분입니다.<br>4명 합계 이동시간 '+fc.raw+'분 = 평소 대비 '+fmt(fc.sum)+'분, 가장 많이 늘어나는 사람 '+fmt(fc.max)+'분.';
+  if(mode==='office') office.addTo(map); else office.remove();
+  document.getElementById('legend').innerHTML=legend();
 }
-document.getElementById('top5').onclick=()=>{C.forEach((c,i)=>c.on=i<5);focus=0;render();};
-document.getElementById('gn').onclick=()=>{C.forEach(c=>c.on=!!c.gn);focus=C.findIndex(c=>c.gn);render();};
+
+function setMode(m){
+  mode=m;
+  document.querySelectorAll('#mode button').forEach(b=>b.classList.toggle('on',b.dataset.m===m));
+  calc();
+  C.forEach((c,i)=>c.on=i<1);
+  fc=C[0];
+  render();
+}
+document.querySelectorAll('#mode button').forEach(b=>b.onclick=()=>setMode(b.dataset.m));
+document.getElementById('top5').onclick=()=>{C.forEach((c,i)=>c.on=i<5);fc=C[0];render();};
+document.getElementById('gn').onclick=()=>{C.forEach(c=>c.on=!!c.gn);fc=C.find(c=>c.gn);render();};
 document.getElementById('none').onclick=()=>{C.forEach(c=>c.on=false);render();};
 
 const allPts=[...Object.values(SRC).map(s=>s.pos),...C.map(c=>c.pos)];
 const fit=()=>{map.invalidateSize();map.fitBounds(L.latLngBounds(allPts).pad(0.08),{paddingTopLeft:[110,10],paddingBottomRight:[70,10]});};
-render();
+setMode('office');
 fit();
 window.addEventListener('load',fit);
 window.addEventListener('resize',fit);
